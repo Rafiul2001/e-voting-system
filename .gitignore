@@ -1,0 +1,4 @@
+admin-panel/api/node_modules
+admin-panel/client/node_modules
+chaincodes/vote-tally-cc/node_modules
+chaincodes/voter-permit-cc/node_modules
