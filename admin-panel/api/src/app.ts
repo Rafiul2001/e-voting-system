@@ -9,6 +9,6 @@ app.use('/uploads/user_images', express.static('uploads/user_images'))
 
 //Routes
 
-app.use('/api/admin', adminRouter)
+app.use('/api/v1/admin', adminRouter)
 
 export default app
