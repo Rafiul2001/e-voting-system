@@ -8,7 +8,7 @@ export const adminLoginBody = z.object({
 export const adminLoginResponse = z.object({
   token: z.string(),
   data: z.object({
-    userEmail: z.string(),
+    userEmail: z.string().optional(),
     userName: z.string(),
   }),
 });
