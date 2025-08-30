@@ -61,25 +61,24 @@ candidateRouter.post(
 
       if (
         data.length > 0 &&
-        data[0]?.affiliationType !== affiliationType &&
-        data[0]?.partyName !== partyName
+        (data[0]?.affiliationType !== affiliationType ||
+          data[0]?.partyName !== partyName)
       )
         return res.status(409).json({
           message: "Affiliation and party name must be same for same candidate",
         });
 
+      const dataFoundUsingConstituencyId = data.find((can) => {
+        return can.constituencyId?.toString() === constituencyId;
+      });
+      if (data.length > 0 && dataFoundUsingConstituencyId)
+        return res.status(409).json({
+          message: "Already registered with this constituency",
+        });
+
       if (data.length === 5)
         return res.status(409).json({
           message: "This candidate is already registered for 5 constituencies",
-        });
-
-      const findDataUsingConstituency = data.find((can) => {
-        return can.constituencyId === new ObjectId(constituencyId);
-      });
-
-      if (findDataUsingConstituency)
-        return res.status(409).json({
-          message: "Already registered with this constituency",
         });
 
       const newCandidate = new CandidateModel(
