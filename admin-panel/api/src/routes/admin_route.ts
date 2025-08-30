@@ -2,36 +2,46 @@ import { NextFunction, Request, Response, Router } from "express";
 import { adminLoginBody } from "../../shared/validators/adminValidator";
 import { database } from "../mongodb_connection/connection";
 import { AdminModel } from "../models/adminModel";
-import { CollectionListNames } from "../config/config";
-import { verifyToken } from "../middlewares/verifyToken";
+import config, { CollectionListNames } from "../config/config";
+import jwt from "jsonwebtoken";
+import { matchPassword } from "../tools/passwordEncrypter";
 
 const adminRouter = Router();
 
 // Login route
 adminRouter.post(
   "/login",
-  verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { userName, password } = adminLoginBody.parse(req.body);
-      const data = await database
+      const user = await database
         .collection<AdminModel>(CollectionListNames.ADMIN)
         .findOne({
           userName: userName,
-          password: password,
         });
 
-      if (!data) {
+      if (!user) {
         return res.status(401).json({
-          message: "Invalid username or password",
+          message: "User does not exists",
         });
       }
+      const response = await matchPassword(password, user?.password);
 
-      res.status(200).json({
+      if (!response)
+        return res.status(401).json({
+          message: "Incorrect password",
+        });
+
+      const token = jwt.sign({ userId: user._id }, config.jwtPrivateKey, {
+        expiresIn: "1h",
+      });
+
+      return res.status(200).json({
+        token: token,
         message: "Login Successful",
         data: {
-          userEmail: data?.userEmail,
-          userName: data?.userName,
+          userEmail: user?.userEmail,
+          userName: user?.userName,
         },
       });
     } catch (error) {

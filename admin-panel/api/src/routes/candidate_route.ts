@@ -27,7 +27,7 @@ candidateRouter.get(
         .find({ electionId: new ObjectId(electionId) })
         .toArray();
 
-      res.json({
+      return res.json({
         message: "Successfully get all candidate",
         candidateList: candidateList,
       });
@@ -59,26 +59,27 @@ candidateRouter.post(
         })
         .toArray();
 
+      if (
+        data.length > 0 &&
+        data[0]?.affiliationType !== affiliationType &&
+        data[0]?.partyName !== partyName
+      )
+        return res.status(409).json({
+          message: "Affiliation and party name must be same for same candidate",
+        });
+
       if (data.length === 5)
-        res.status(409).json({
+        return res.status(409).json({
           message: "This candidate is already registered for 5 constituencies",
         });
 
-      const findData = data.find((can) => {
+      const findDataUsingConstituency = data.find((can) => {
         return can.constituencyId === new ObjectId(constituencyId);
       });
 
-      if (findData)
-        res.status(409).json({
+      if (findDataUsingConstituency)
+        return res.status(409).json({
           message: "Already registered with this constituency",
-        });
-
-      if (
-        findData?.affiliationType !== affiliationType &&
-        findData?.partyName !== partyName
-      )
-        res.status(409).json({
-          message: "Affiliation and party name must be same for same candidate",
         });
 
       const newCandidate = new CandidateModel(
@@ -94,7 +95,7 @@ candidateRouter.post(
         .collection<CandidateModel>(CollectionListNames.CANDIDATE)
         .insertOne(newCandidate);
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully inserted new candidate",
         candidate: newCandidate,
       });
@@ -117,11 +118,11 @@ candidateRouter.delete(
         .findOneAndDelete({ _id: new ObjectId(candidateId) });
 
       if (!data)
-        res.status(404).json({
+        return res.status(404).json({
           message: "Candidate does not exist",
         });
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully deleted candidate",
         candidate: data,
       });
@@ -158,7 +159,7 @@ candidateRouter.put(
         );
 
       if (result.matchedCount === 0)
-        res.status(404).json({
+        return res.status(404).json({
           message: "Candidate not found",
         });
 
@@ -169,7 +170,7 @@ candidateRouter.put(
         })
         .toArray();
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully Updated Candidate",
         candidateList: candidateList,
       });

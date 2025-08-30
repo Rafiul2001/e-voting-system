@@ -11,6 +11,6 @@ export class ConstituencyModel implements IConstituencyModel {
 
   constructor(constituencyName: string, _id?: ObjectId) {
     this._id = _id ? _id : new ObjectId();
-    this.constituencyName = constituencyName;
+    this.constituencyName = constituencyName.toLowerCase();
   }
 }

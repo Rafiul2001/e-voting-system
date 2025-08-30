@@ -23,7 +23,7 @@ constituencyRouter.get(
         .find()
         .toArray();
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully get Constituency List",
         constituencyList: constituencyList,
       });
@@ -41,13 +41,24 @@ constituencyRouter.post(
     try {
       const { constituencyName } = createNewConstituencyBody.parse(req.body);
 
+      const data = await database
+        .collection<ConstituencyModel>(CollectionListNames.CONSTITUENCY)
+        .findOne({
+          constituencyName: constituencyName.toLowerCase(),
+        });
+
+      if (data)
+        return res.status(409).json({
+          message: "This name is already exists",
+        });
+
       const constituency = new ConstituencyModel(constituencyName);
 
       await database
         .collection<ConstituencyModel>(CollectionListNames.CONSTITUENCY)
         .insertOne(constituency);
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully created a new constituency",
         constituency: constituency,
       });
@@ -71,7 +82,7 @@ constituencyRouter.delete(
         .toArray();
 
       if (existsVoter.length > 0)
-        res.status(409).json({
+        return res.status(409).json({
           message:
             "Can not delete this constituency. Please update the voters list first with this constituency",
         });
@@ -84,7 +95,7 @@ constituencyRouter.delete(
         return res.status(404).json({ message: "Constituency not found" });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Constituency deleted successfully",
         constituency: deletedItem,
       });

@@ -6,6 +6,7 @@ export const adminLoginBody = z.object({
 });
 
 export const adminLoginResponse = z.object({
+  message: z.string(),
   token: z.string(),
   data: z.object({
     userEmail: z.string().optional(),

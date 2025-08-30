@@ -23,7 +23,7 @@ electionRouter.get(
         .find()
         .toArray();
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully get election list",
         electionList: electionList,
       });
@@ -48,7 +48,7 @@ electionRouter.post(
         });
 
       if (exists)
-        res.status(409).json({
+        return res.status(409).json({
           message: "Election name exists",
         });
 
@@ -58,7 +58,7 @@ electionRouter.post(
         .collection<ElectionModel>(CollectionListNames.ELECTION)
         .insertOne(newElection);
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "A new election has been created",
         election: newElection,
       });
@@ -83,7 +83,7 @@ electionRouter.delete(
         });
 
       if (!data)
-        res.status(404).json({
+        return res.status(404).json({
           message: "Election not found",
         });
 
@@ -93,7 +93,7 @@ electionRouter.delete(
           electionId: new ObjectId(electionId),
         });
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Election has been deleted",
         election: data,
       });

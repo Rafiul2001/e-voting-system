@@ -28,7 +28,7 @@ voterRouter.get(
         })
         .toArray();
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully get all voters",
         voterList: voterList,
       });
@@ -62,7 +62,7 @@ voterRouter.post(
         });
 
       if (exist)
-        res.status(409).json({
+        return res.status(409).json({
           message: "VoterId already exists",
         });
 
@@ -70,7 +70,7 @@ voterRouter.post(
         .collection<VoterModel>(CollectionListNames.VOTER)
         .insertOne(newVoter);
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully created a new voter",
         voter: newVoter,
       });
@@ -95,11 +95,11 @@ voterRouter.delete(
         });
 
       if (!data)
-        res.status(404).json({
+        return res.status(404).json({
           message: "Voter does not exists",
         });
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully deleted voter",
         voter: {
           _id: data?._id,
@@ -144,11 +144,11 @@ voterRouter.put(
         );
 
       if (!data)
-        res.status(404).json({
+        return res.status(404).json({
           message: "Voter not found",
         });
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Successfully updated",
         voter: {
           _id: data?._id,

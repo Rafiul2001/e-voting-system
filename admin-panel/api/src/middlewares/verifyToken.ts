@@ -9,8 +9,9 @@ export const verifyToken = async (
 ) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-  if (!token)
-    return res.sendStatus(401).json({ message: "Unauthorized Access!" });
+
+  if (!token) return res.status(401).json({ message: "Unauthorized Access!" });
+
   jwt.verify(token, config.jwtPrivateKey, (err, decoded) => {
     if (err) {
       return res.status(403).json({ message: "Invalid or expired token" });
@@ -19,6 +20,6 @@ export const verifyToken = async (
     if (payload.userId) {
       req.userId = payload.userId;
     }
-    next();
+    return next();
   });
 };
