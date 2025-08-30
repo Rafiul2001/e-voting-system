@@ -16,7 +16,7 @@ const voterRouter = Router();
 
 // Get all voters
 voterRouter.get(
-  "/:constituencyId",
+  "/get-all/:constituencyId",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -46,6 +46,13 @@ voterRouter.post(
     try {
       const { voterId, constituencyId, voterName, dateOfBirth, address } =
         createVoterBody.parse(req.body);
+
+      // Validate constituencyId
+      if (!ObjectId.isValid(constituencyId)) {
+        return res.status(400).json({
+          message: "Invalid constituencyId format",
+        });
+      }
 
       const newVoter = new VoterModel(
         voterId,
@@ -127,20 +134,21 @@ voterRouter.put(
       const { constituencyId, voterName, dateOfBirth, address } =
         updateVoterBody.parse(req.body);
 
+      const updateFields: any = {};
+
+      // Add only fields that exist in the request
+      if (constituencyId)
+        updateFields.constituencyId = new ObjectId(constituencyId);
+      if (voterName) updateFields.voterName = voterName;
+      if (dateOfBirth) updateFields.dateOfBirth = dateOfBirth;
+      if (address) updateFields.address = address;
+
       const data = await database
         .collection<VoterModel>(CollectionListNames.VOTER)
         .findOneAndUpdate(
-          {
-            _id: new ObjectId(voterObjectId),
-          },
-          {
-            $set: {
-              constituencyId: new ObjectId(constituencyId),
-              voterName: voterName,
-              dateOfBirth: dateOfBirth,
-              address: address,
-            },
-          }
+          { _id: new ObjectId(voterObjectId) },
+          { $set: updateFields },
+          { returnDocument: "after" }
         );
 
       if (!data)
