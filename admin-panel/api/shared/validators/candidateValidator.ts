@@ -1,4 +1,5 @@
 import z from "zod";
+import { AFFILIATION_TYPE } from "../../src/models/candidateModel";
 
 // Read operations
 export const getAllCandidateParams = z.object({
@@ -26,7 +27,9 @@ export const createCandidateBody = z.object({
   electionId: z.string(),
   constituencyId: z.string(),
   voterName: z.string(),
-  affiliationType: z.string(),
+  affiliationType: z.enum(
+    Object.values(AFFILIATION_TYPE) as [string, ...string[]]
+  ),
   partyName: z.string().optional(),
 });
 
@@ -63,7 +66,7 @@ export const deleteCandidateResponse = z.object({
 
 // Update Operations
 export const updateCandidateParams = z.object({
-  candidateId: z.string(),
+  voterId: z.string(),
 });
 
 export const updateCandidateBody = z.object({
@@ -73,13 +76,15 @@ export const updateCandidateBody = z.object({
 
 export const updateCandidateResponse = z.object({
   message: z.string(),
-  candidate: z.object({
-    _id: z.string(),
-    candidateName: z.string(),
-    voterId: z.string(),
-    constituencyId: z.string(),
-    electionId: z.string(),
-    affiliationType: z.string(),
-    partyName: z.string().optional(),
-  }),
+  candidateList: z.array(
+    z.object({
+      _id: z.string(),
+      candidateName: z.string(),
+      voterId: z.string(),
+      constituencyId: z.string(),
+      electionId: z.string(),
+      affiliationType: z.string(),
+      partyName: z.string().optional(),
+    })
+  ),
 });

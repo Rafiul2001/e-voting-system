@@ -63,10 +63,10 @@ export const updateVoterParams = z.object({
 });
 
 export const updateVoterBody = z.object({
-  constituencyId: z.string(),
-  voterName: z.string(),
-  dateOfBirth: z.string(),
-  address: z.string(),
+  constituencyId: z.string().optional(),
+  voterName: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export const updateVoterResponse = z.object({

@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { IElectionModel } from "./electionModel";
 import { IConstituencyModel } from "./constituencyModel";
+import { IVoterModel } from "./voterModel";
 
 export const AFFILIATION_TYPE = {
   INDEPENDENT: "independent",
@@ -10,28 +11,28 @@ export const AFFILIATION_TYPE = {
 export interface ICandidateModel {
   _id?: ObjectId;
   candidateName: string;
-  voterId: string;
+  voterId: IVoterModel["_id"];
   electionId: IElectionModel["_id"];
   constituencyId: IConstituencyModel["_id"];
-  affiliationType: keyof typeof AFFILIATION_TYPE;
+  affiliationType: (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE];
   partyName?: string;
 }
 
 export class CandidateModel implements ICandidateModel {
   _id?: ObjectId;
   candidateName: string;
-  voterId: string;
+  voterId: IVoterModel["_id"];
   electionId: IElectionModel["_id"];
   constituencyId: IConstituencyModel["_id"];
-  affiliationType: keyof typeof AFFILIATION_TYPE;
+  affiliationType: (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE];
   partyName?: string;
 
   constructor(
     candidateName: string,
-    voterId: string,
+    voterId: IVoterModel["_id"],
     electionId: IElectionModel["_id"],
     constituencyId: IConstituencyModel["_id"],
-    affiliationType: keyof typeof AFFILIATION_TYPE,
+    affiliationType: (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE],
     partyName?: string,
     _id?: ObjectId
   ) {
