@@ -20,24 +20,29 @@ export class ElectionContract extends Contract {
   public async Initialize(ctx: Context, electionId: string): Promise<string> {
     this._require(electionId, "electionId is required");
 
-    const electionBytes = await ctx.stub.getState(electionId);
-    if (electionBytes && electionBytes.length > 0) {
-      throw new Error("Election is already initialized");
+    try {
+      const exists = await this.electionExists(ctx, electionId);
+      if (exists) {
+        return `This election is exists with election id: ${electionId}`;
+      }
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+
+      const electionRecord: ElectionStatusRecord = {
+        electionId,
+        status: PermitStatus.INITIALIZED,
+        updatedAt: now,
+      };
+
+      await ctx.stub.putState(
+        electionRecord.electionId,
+        Buffer.from(JSON.stringify(electionRecord))
+      );
+
+      return `Election has been initialized with election ID : ${electionId}`;
+    } catch (error) {
+      return `Internal server error`;
     }
-
-    const now = new Date().toISOString();
-
-    const electionRecord: ElectionStatusRecord = {
-      electionId,
-      status: PermitStatus.INITIALIZED,
-      updatedAt: now,
-    };
-
-    await ctx.stub.putState(
-      electionId,
-      Buffer.from(JSON.stringify(electionRecord))
-    );
-    return "Election has been initialized";
   }
 
   /**
@@ -116,6 +121,14 @@ export class ElectionContract extends Contract {
   // Utility guard
   private _require(cond: any, msg: string): void {
     if (!cond) throw new Error(msg);
+  }
+
+  private async electionExists(
+    ctx: Context,
+    electionId: string
+  ): Promise<boolean> {
+    const electionJSON = await ctx.stub.getState(electionId);
+    return electionJSON.length > 0;
   }
 
   private async _checkAlreadyFinished(ctx: Context, electionId: string) {

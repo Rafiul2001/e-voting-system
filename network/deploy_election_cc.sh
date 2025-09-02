@@ -14,9 +14,9 @@ set_peer_env() {
 export FABRIC_CFG_PATH=${PWD}/configtx/
 export CC_PATH=../chaincodes/election-cc/
 export CC_NAME=electioncc
-export CC_VERSION=1.0.2
+export CC_VERSION=1.0.1
 export CHANNEL_NAME=votingchannel
-export SEQUENCE=3
+export SEQUENCE=1
 export SIGNATUREPOLICY="AND('ElectionCommissionMSP.peer', 'DistrictCommission.peer')"
 
 peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_PATH}" --lang node --label ${CC_NAME}_${CC_VERSION}
