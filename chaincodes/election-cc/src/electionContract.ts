@@ -21,7 +21,7 @@ export class ElectionContract extends Contract {
     this._require(electionId, "electionId is required");
 
     const electionBytes = await ctx.stub.getState(electionId);
-    if (electionBytes && electionBytes.length) {
+    if (electionBytes && electionBytes.length > 0) {
       throw new Error("Election is already initialized");
     }
 
@@ -53,7 +53,7 @@ export class ElectionContract extends Contract {
     this._require(electionId, "electionId is required");
 
     const electionBytes = await ctx.stub.getState(electionId);
-    if (!(electionBytes && electionBytes.length)) {
+    if (!(electionBytes && electionBytes.length > 0)) {
       throw new Error("Election is not found");
     }
 
@@ -90,7 +90,7 @@ export class ElectionContract extends Contract {
     this._require(electionId, "electionId is required");
 
     const electionBytes = await ctx.stub.getState(electionId);
-    if (!(electionBytes && electionBytes.length)) {
+    if (!(electionBytes && electionBytes.length > 0)) {
       throw new Error("Election is not found");
     }
 
