@@ -3,7 +3,7 @@
  */
 
 import { Context, Contract, Info, Transaction } from "fabric-contract-api";
-import { ElectionStatusRecord, PermitStatus } from "./record";
+import { ElectionStatusRecord, PermitStatus, TPermitStatus } from "./record";
 // import { KeyEndorsementPolicy } from 'fabric-shim';
 import * as crypto from "crypto";
 
@@ -66,7 +66,9 @@ export class ElectionContract extends Contract {
     }
 
     electionRec.status = PermitStatus.STARTED;
-    electionRec.updatedAt = new Date().toString();
+    electionRec.updatedAt = new Date().toISOString();
+
+    await this._checkAlreadyFinished(ctx, electionId);
 
     await ctx.stub.putState(
       electionId,
@@ -101,7 +103,7 @@ export class ElectionContract extends Contract {
     }
 
     electionRec.status = PermitStatus.FINISHED;
-    electionRec.updatedAt = new Date().toString();
+    electionRec.updatedAt = new Date().toISOString();
 
     await ctx.stub.putState(
       electionId,
@@ -114,5 +116,32 @@ export class ElectionContract extends Contract {
   // Utility guard
   private _require(cond: any, msg: string): void {
     if (!cond) throw new Error(msg);
+  }
+
+  private async _checkAlreadyFinished(ctx: Context, electionId: string) {
+    const iterator = await ctx.stub.getHistoryForKey(electionId);
+    try {
+      while (true) {
+        const res = await iterator.next();
+
+        if (res.done) break;
+
+        if (res.value && res.value.value.toString()) {
+          const value = JSON.parse(res.value.value.toString()) as {
+            electionId: string;
+            status: TPermitStatus;
+            updatedAt: string;
+          };
+
+          if (value.status === PermitStatus.FINISHED) {
+            throw new Error(
+              "This election is already finished before. Can't start again."
+            );
+          }
+        }
+      }
+    } finally {
+      await iterator.close();
+    }
   }
 }
