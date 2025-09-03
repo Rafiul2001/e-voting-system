@@ -41,7 +41,7 @@ export class ElectionContract extends Contract {
 
       return `Election has been initialized with election ID : ${electionId}`;
     } catch (error) {
-      return `Internal server error`;
+      return `Internal server error: ${JSON.stringify(error)} | ${error}`;
     }
   }
 
@@ -57,30 +57,36 @@ export class ElectionContract extends Contract {
   ): Promise<string> {
     this._require(electionId, "electionId is required");
 
-    const electionBytes = await ctx.stub.getState(electionId);
-    if (!(electionBytes && electionBytes.length > 0)) {
-      throw new Error("Election is not found");
+    try {
+      const electionBytes = await ctx.stub.getState(electionId);
+      if (electionBytes.length === 0) {
+        return "Election is not found";
+      }
+
+      const electionRec = JSON.parse(
+        electionBytes.toString()
+      ) as ElectionStatusRecord;
+
+      if (electionRec.status === PermitStatus.STARTED) {
+        return "This election is already started";
+      }
+
+      electionRec.status = PermitStatus.STARTED;
+      electionRec.updatedAt = new Date().toISOString();
+
+      const isAlreadyFinished = await this._checkAlreadyFinished(ctx, electionId);
+
+      if(isAlreadyFinished) return "This election is already finished"
+
+      await ctx.stub.putState(
+        electionId,
+        Buffer.from(JSON.stringify(electionRec))
+      );
+
+      return "Election started!";
+    } catch (error) {
+      return `Internal server error: ${error}`;
     }
-
-    const electionRec = JSON.parse(
-      electionBytes.toString()
-    ) as ElectionStatusRecord;
-
-    if (electionRec.status === PermitStatus.STARTED) {
-      throw new Error("This election is already started");
-    }
-
-    electionRec.status = PermitStatus.STARTED;
-    electionRec.updatedAt = new Date().toISOString();
-
-    await this._checkAlreadyFinished(ctx, electionId);
-
-    await ctx.stub.putState(
-      electionId,
-      Buffer.from(JSON.stringify(electionRec))
-    );
-
-    return "Election started!";
   }
 
   /**
@@ -94,28 +100,32 @@ export class ElectionContract extends Contract {
   ): Promise<string> {
     this._require(electionId, "electionId is required");
 
-    const electionBytes = await ctx.stub.getState(electionId);
-    if (!(electionBytes && electionBytes.length > 0)) {
-      throw new Error("Election is not found");
+    try {
+      const electionBytes = await ctx.stub.getState(electionId);
+      if (electionBytes.length === 0) {
+        return "Election is not found";
+      }
+
+      const electionRec = JSON.parse(
+        electionBytes.toString()
+      ) as ElectionStatusRecord;
+
+      if (electionRec.status === PermitStatus.FINISHED) {
+        return "This election is already finished";
+      }
+
+      electionRec.status = PermitStatus.FINISHED;
+      electionRec.updatedAt = new Date().toISOString();
+
+      await ctx.stub.putState(
+        electionId,
+        Buffer.from(JSON.stringify(electionRec))
+      );
+
+      return "Election has finished";
+    } catch (error) {
+      return `Internal server error: ${error}`;
     }
-
-    const electionRec = JSON.parse(
-      electionBytes.toString()
-    ) as ElectionStatusRecord;
-
-    if (electionRec.status === PermitStatus.FINISHED) {
-      throw new Error("This election is already finished");
-    }
-
-    electionRec.status = PermitStatus.FINISHED;
-    electionRec.updatedAt = new Date().toISOString();
-
-    await ctx.stub.putState(
-      electionId,
-      Buffer.from(JSON.stringify(electionRec))
-    );
-
-    return "Election has finished";
   }
 
   // Utility guard
@@ -131,7 +141,10 @@ export class ElectionContract extends Contract {
     return electionJSON.length > 0;
   }
 
-  private async _checkAlreadyFinished(ctx: Context, electionId: string) {
+  private async _checkAlreadyFinished(
+    ctx: Context,
+    electionId: string
+  ): Promise<boolean> {
     const iterator = await ctx.stub.getHistoryForKey(electionId);
     try {
       while (true) {
@@ -147,12 +160,11 @@ export class ElectionContract extends Contract {
           };
 
           if (value.status === PermitStatus.FINISHED) {
-            throw new Error(
-              "This election is already finished before. Can't start again."
-            );
+            return true;
           }
         }
       }
+      return false;
     } finally {
       await iterator.close();
     }
