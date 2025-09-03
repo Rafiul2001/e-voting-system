@@ -17,7 +17,7 @@ export CC_NAME=electioncc
 export CC_VERSION=1.0.1
 export CHANNEL_NAME=votingchannel
 export SEQUENCE=1
-export SIGNATUREPOLICY="AND('ElectionCommissionMSP.peer', 'DistrictCommission.peer')"
+export SIGNATUREPOLICY="AND('ElectionCommissionMSP.peer', 'DistrictCommissionMSP.peer')"
 
 peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_PATH}" --lang node --label ${CC_NAME}_${CC_VERSION}
 

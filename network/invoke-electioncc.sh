@@ -22,7 +22,8 @@ peer chaincode invoke \
     -C ${CHANNEL_NAME} \
     -n ${CC_NAME} \
     --peerAddresses localhost:8051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/electionCommission.example.com/peers/peer0.electionCommission.example.com/tls/ca.crt" \
-    -c '{"function":"Initialize","Args":["ELPID002"]}'
+    --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/districtCommission.example.com/peers/peer0.districtCommission.example.com/tls/ca.crt" \
+    -c '{"function":"Initialize","Args":["ELPID005"]}'
 
 # set_peer_env localhost:9051 "DistrictCommissionMSP" "${PWD}/organizations/peerOrganizations/districtCommission.example.com/peers/peer0.districtCommission.example.com/tls/ca.crt" "${PWD}/organizations/peerOrganizations/districtCommission.example.com/users/Admin@districtCommission.example.com/msp"
 
@@ -33,4 +34,4 @@ peer chaincode invoke \
 #     -C ${CHANNEL_NAME} \
 #     -n ${CC_NAME} \
 #     --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/districtCommission.example.com/peers/peer0.districtCommission.example.com/tls/ca.crt" \
-#     -c '{"function":"Initialize","Args":["ELPID002"]}'
+#     -c '{"function":"Initialize","Args":["ELPID005"]}'

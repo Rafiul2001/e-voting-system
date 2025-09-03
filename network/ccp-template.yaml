@@ -1,5 +1,5 @@
 ---
-name: port-network-${ORG}
+name: vote-network-${ORG}
 version: 1.0.0
 client:
   organization: ${ORGC}
