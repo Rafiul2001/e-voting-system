@@ -6,9 +6,15 @@ import { CollectionListNames } from "../config/config";
 import {
   createElectionBody,
   deleteElectionParams,
+  startElectionParams,
 } from "../../shared/validators/electionValidator";
 import { ObjectId } from "mongodb";
 import { CandidateModel } from "../models/candidateModel";
+import {
+  finishElection,
+  initializeElection,
+  startElection,
+} from "../networkConnection/electionContractFunctions/electionContractFunctions";
 
 const electionRouter = Router();
 
@@ -58,8 +64,12 @@ electionRouter.post(
         .collection<ElectionModel>(CollectionListNames.ELECTION)
         .insertOne(newElection);
 
+      const message = newElection._id
+        ? await initializeElection(newElection._id.toString())
+        : "Couldn't find election id";
+
       return res.status(200).json({
-        message: "A new election has been created",
+        message: message,
         election: newElection,
       });
     } catch (error) {
@@ -69,33 +79,67 @@ electionRouter.post(
 );
 
 // Delete an election
-electionRouter.delete(
-  "/delete/:electionId",
+// electionRouter.delete(
+//   "/delete/:electionId",
+//   verifyToken,
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const { electionId } = deleteElectionParams.parse(req.params);
+
+//       const data = await database
+//         .collection<ElectionModel>(CollectionListNames.ELECTION)
+//         .findOneAndDelete({
+//           _id: new ObjectId(electionId),
+//         });
+
+//       if (!data)
+//         return res.status(404).json({
+//           message: "Election not found",
+//         });
+
+//       await database
+//         .collection<CandidateModel>(CollectionListNames.CANDIDATE)
+//         .deleteMany({
+//           electionId: new ObjectId(electionId),
+//         });
+
+//       return res.status(200).json({
+//         message: "Election has been deleted",
+//         election: data,
+//       });
+//     } catch (error) {
+//       next(error);
+//     }
+//   }
+// );
+
+electionRouter.get(
+  "/start-election/:electionId",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { electionId } = deleteElectionParams.parse(req.params);
+      const { electionId } = startElectionParams.parse(req.params);
 
-      const data = await database
-        .collection<ElectionModel>(CollectionListNames.ELECTION)
-        .findOneAndDelete({
-          _id: new ObjectId(electionId),
-        });
-
-      if (!data)
-        return res.status(404).json({
-          message: "Election not found",
-        });
-
-      await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .deleteMany({
-          electionId: new ObjectId(electionId),
-        });
-
+      const message = await startElection(electionId);
       return res.status(200).json({
-        message: "Election has been deleted",
-        election: data,
+        message: message,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+electionRouter.get(
+  "/finish-election/:electionId",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { electionId } = startElectionParams.parse(req.params);
+
+      const message = await finishElection(electionId);
+      return res.status(200).json({
+        message: message,
       });
     } catch (error) {
       next(error);

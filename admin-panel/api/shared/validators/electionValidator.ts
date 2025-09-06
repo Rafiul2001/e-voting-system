@@ -36,3 +36,21 @@ export const deleteElectionResponse = z.object({
     electionName: z.string(),
   }),
 });
+
+// Start an election
+export const startElectionParams = z.object({
+  electionId: z.string(),
+});
+
+export const startElectionResponse = z.object({
+  message: z.string(),
+});
+
+// Finish an election
+export const finishElectionParams = z.object({
+  electionId: z.string(),
+});
+
+export const finishElectionResponse = z.object({
+  message: z.string(),
+});
