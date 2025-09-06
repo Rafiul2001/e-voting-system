@@ -238,4 +238,5 @@ function remove_docker_images {
     docker images | grep "voterpermitcc" | awk '{print $3}' | xargs -r docker rmi
     docker images | grep "votetallycc" | awk '{print $3}' | xargs -r docker rmi
     docker images | grep "electioncc" | awk '{print $3}' | xargs -r docker rmi
+    docker network rm vote-network
 }
