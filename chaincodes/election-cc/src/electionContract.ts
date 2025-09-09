@@ -74,9 +74,12 @@ export class ElectionContract extends Contract {
       electionRec.status = PermitStatus.STARTED;
       electionRec.updatedAt = new Date().toISOString();
 
-      const isAlreadyFinished = await this._checkAlreadyFinished(ctx, electionId);
+      const isAlreadyFinished = await this.checkAlreadyFinished(
+        ctx,
+        electionId
+      );
 
-      if(isAlreadyFinished) return "This election is already finished"
+      if (isAlreadyFinished) return "This election is already finished";
 
       await ctx.stub.putState(
         electionId,
@@ -133,6 +136,7 @@ export class ElectionContract extends Contract {
     if (!cond) throw new Error(msg);
   }
 
+  @Transaction(false)
   private async electionExists(
     ctx: Context,
     electionId: string
@@ -141,7 +145,22 @@ export class ElectionContract extends Contract {
     return electionJSON.length > 0;
   }
 
-  private async _checkAlreadyFinished(
+  @Transaction(false)
+  public async isStarted(ctx: Context, electionId: string): Promise<boolean> {
+    const electionBytes = await ctx.stub.getState(electionId);
+    const electionRec = JSON.parse(
+      electionBytes.toString()
+    ) as ElectionStatusRecord;
+
+    if (electionRec.status === PermitStatus.STARTED) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Transaction(false)
+  public async checkAlreadyFinished(
     ctx: Context,
     electionId: string
   ): Promise<boolean> {

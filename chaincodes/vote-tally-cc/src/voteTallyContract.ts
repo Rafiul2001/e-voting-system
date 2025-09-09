@@ -6,6 +6,10 @@ import { Context, Contract, Info, Transaction } from "fabric-contract-api";
 import { TallyRecord } from "./tallyRecord";
 import * as crypto from "crypto";
 
+const electionCCName = "electioncc";
+const votePermitCCName = "voterpermitcc";
+const votingChannel = "votingchannel";
+
 const PREFIX = {
   TALLY: "TALLY", // TALLY#electionId#constituencyId#candidateId
 };
@@ -34,12 +38,21 @@ export class VoteTallyContract extends Contract {
       "electionId, constituencyId, candidateId, and permit are required"
     );
 
+    const isElectionStarted = await ctx.stub.invokeChaincode(
+      electionCCName,
+      ["isStarted", electionId],
+      votingChannel
+    );
+
+    if (!isElectionStarted) {
+      return "Election is not started or is finished!";
+    }
+
     const permitHash = sha256Hex(permit);
-    const ccAName = "voterpermitcc";
     const resp = await ctx.stub.invokeChaincode(
-      ccAName,
+      votePermitCCName,
       ["ValidateAndSpendPermit", electionId, permitHash],
-      "mychannel"
+      votingChannel
     );
 
     if (resp.status !== 200) {
@@ -94,6 +107,16 @@ export class VoteTallyContract extends Contract {
       "missing inputs"
     );
 
+    const isAlreadyFinished = await ctx.stub.invokeChaincode(
+      electionCCName,
+      ["checkAlreadyFinished", electionId],
+      votingChannel
+    );
+
+    if (!isAlreadyFinished) {
+      return "Election is not finished yet!";
+    }
+
     const key = ctx.stub.createCompositeKey(PREFIX.TALLY, [
       electionId,
       constituencyId,
@@ -120,6 +143,16 @@ export class VoteTallyContract extends Contract {
     constituencyId: string
   ): Promise<string> {
     this._require(electionId && constituencyId, "missing inputs");
+
+    const isAlreadyFinished = await ctx.stub.invokeChaincode(
+      electionCCName,
+      ["checkAlreadyFinished", electionId],
+      votingChannel
+    );
+
+    if (!isAlreadyFinished) {
+      return "Election is not finished yet!";
+    }
 
     const iter = await ctx.stub.getStateByPartialCompositeKey(PREFIX.TALLY, [
       electionId,
@@ -155,6 +188,16 @@ export class VoteTallyContract extends Contract {
     electionId: string
   ): Promise<string> {
     this._require(electionId, "missing electionId");
+
+    const isAlreadyFinished = await ctx.stub.invokeChaincode(
+      electionCCName,
+      ["checkAlreadyFinished", electionId],
+      votingChannel
+    );
+
+    if (!isAlreadyFinished) {
+      return "Election is not finished yet!";
+    }
 
     const iter = await ctx.stub.getStateByPartialCompositeKey(PREFIX.TALLY, [
       electionId,
