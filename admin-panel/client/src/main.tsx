@@ -8,6 +8,7 @@ import CandidateList from "./pages/CandidateList.tsx";
 import ElectionList from "./pages/ElectionList.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
+import Login from "./pages/Login.tsx";
 
 const router = createBrowserRouter([
   {
@@ -19,22 +20,26 @@ const router = createBrowserRouter([
         Component: Home,
       },
       {
-        path: "/voter-list",
+        path: "/voter-records",
         Component: VoterList,
       },
       {
-        path: "/candidate-list",
+        path: "/candidate-records",
         Component: CandidateList,
       },
       {
-        path: "/election-list",
+        path: "/election-records",
         Component: ElectionList,
       },
-      {
-        path: "*",
-        Component: NotFound,
-      },
     ],
+  },
+  {
+    path: "/login",
+    Component: Login,
+  },
+  {
+    path: "*",
+    Component: NotFound,
   },
 ]);
 
