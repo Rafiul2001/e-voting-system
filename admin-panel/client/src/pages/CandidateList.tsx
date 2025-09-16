@@ -1,5 +1,7 @@
+import Container from "../components/ui/Container";
+
 const CandidateList: React.FC = () => {
-  return <div>CandidateList</div>;
+  return <Container>CandidateList</Container>;
 };
 
 export default CandidateList;

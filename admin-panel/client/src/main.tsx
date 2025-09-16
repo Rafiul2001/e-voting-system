@@ -31,15 +31,15 @@ const router = createBrowserRouter([
         path: "/election-records",
         Component: ElectionList,
       },
+      {
+        path: "*",
+        Component: NotFound,
+      },
     ],
   },
   {
     path: "/login",
     Component: Login,
-  },
-  {
-    path: "*",
-    Component: NotFound,
   },
 ]);
 
