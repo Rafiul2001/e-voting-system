@@ -9,6 +9,7 @@ import ElectionList from "./pages/ElectionList.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
+import ConstituencyList from "./pages/ConstituencyList.tsx";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "/voter-records",
         Component: VoterList,
+      },
+      {
+        path: "/constituency-records",
+        Component: ConstituencyList,
       },
       {
         path: "/candidate-records",

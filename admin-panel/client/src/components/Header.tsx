@@ -1,13 +1,16 @@
-import { Link } from "react-router";
+import { Link, NavLink } from "react-router";
 import Container from "./ui/Container";
 import Flex from "./ui/Flex";
-import NavItem from "./ui/NavItem";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
+import Text from "./ui/Text";
+import { fontWeight } from "./utils/utils";
+import NavMenu from "./ui/NavMenu";
 
 const navItems = [
   { name: "Home", url: "/" },
   { name: "Voter Records", url: "/voter-records" },
+  { name: "Constituency Records", url: "/constituency-records" },
   { name: "Candidate Records", url: "/candidate-records" },
   { name: "Election Records", url: "/election-records" },
 ];
@@ -18,22 +21,28 @@ const Header: React.FC = () => {
       <Container>
         <Flex className="justify-between items-center">
           {/* Logo / Title */}
-          <h3 className="text-2xl font-bold text-blue-700 tracking-wide hover:text-blue-900 transition-colors">
-            Election Admin Panel
-          </h3>
+          <Link to="/">
+            <Text size={3} weight={fontWeight.bold} color={"blue"}>
+              Election Admin Panel
+            </Text>
+          </Link>
 
           {/* Navigation */}
-          <ul className="hidden md:flex text-base font-medium gap-6">
+          <NavMenu>
             {navItems.map((item, index) => (
-              <NavItem
+              <NavLink
                 key={index}
-                url={item.url}
-                className="hover:text-blue-600 transition-colors"
+                to={item.url}
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-indigo-600 font-semibold"
+                    : "text-black hover:text-indigo-600 transition-colors"
+                }
               >
                 {item.name}
-              </NavItem>
+              </NavLink>
             ))}
-          </ul>
+          </NavMenu>
 
           {/* Right Actions */}
           <Flex className="gap-4 items-center">
