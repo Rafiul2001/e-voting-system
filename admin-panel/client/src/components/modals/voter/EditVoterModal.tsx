@@ -1,7 +1,7 @@
 import { IoMdClose } from "react-icons/io";
-import Flex from "./ui/Flex";
-import Text from "./ui/Text";
-import type { TVoter } from "../types/VoterTypes";
+import Flex from "../../ui/Flex";
+import Text from "../../ui/Text";
+import type { TVoter } from "../../../types/VoterTypes";
 import { useEffect, useState } from "react";
 
 type TEditVoterModal = {

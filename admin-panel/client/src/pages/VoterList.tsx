@@ -6,10 +6,11 @@ import { FaAngleLeft, FaAngleRight, FaSearch } from "react-icons/fa";
 import Text from "../components/ui/Text";
 import { fontWeight } from "../components/utils/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
-import DeleteModal from "../components/DeleteModal";
 import type { TVoter } from "../types/VoterTypes";
-import EditVoterModal from "../components/EditVoterModal";
 import ToastModal from "../components/ToastModal";
+import EditVoterModal from "../components/modals/voter/EditVoterModal";
+import DeleteModal from "../components/modals/DeleteModal";
+import AddVoterModal from "../components/modals/voter/AddVoterModal";
 
 const voterListData: TVoter[] = [
   {
@@ -160,6 +161,9 @@ const VoterList: React.FC = () => {
 
   const [voterToBeEdited, setVoterToBeEdited] = useState<Partial<TVoter>>();
 
+  const [isOpenAddVoterModal, setIsOpenAddVoterModal] =
+    useState<boolean>(false);
+
   const [toastMessage, setToastMessage] = useState<{
     type: string;
     toastMessage: string;
@@ -198,6 +202,19 @@ const VoterList: React.FC = () => {
     // TODO: Update Voter Operation
     console.log(updatedVoterData);
     setVoterToBeEdited(undefined);
+    setToastMessage({
+      type: "Success",
+      toastMessage: "Update Successful",
+    });
+  }, []);
+
+  const addVoter = useCallback(async (voterFromData: Partial<TVoter>) => {
+    // TODO: Handle Voter Add Operation
+    console.log(voterFromData);
+    setToastMessage({
+      type: "Success",
+      toastMessage: "Successfully Added",
+    });
   }, []);
 
   useEffect(() => {
@@ -215,31 +232,42 @@ const VoterList: React.FC = () => {
 
   return (
     <Container className="relative overflow-hidden">
-      <Text
-        size={3}
-        weight={fontWeight.semiBold}
-        color="primary"
-        className="my-4"
-      >
-        Voter List
-      </Text>
-      <form className="max-w-xl rounded-4xl px-4 py-2 shadow border-2 border-gray-100">
-        <Flex className="gap-2 items-center">
-          <div>
-            <FaSearch color="gray" size={20} />
-          </div>
-          <input
-            type="search"
-            name="searchText"
-            id="searchText"
-            placeholder="Search by ID or Name"
-            value={filter.searchText}
-            onChange={(e) => handleSearchFilter(e)}
-            className="w-full outline-0 border-0 text-xl"
-          />
+      <Flex className="items-end justify-between">
+        <Flex className="flex-1 flex-col gap-4">
+          <Text
+            size={3}
+            weight={fontWeight.semiBold}
+            color="primary"
+            className="my-4 p-2"
+          >
+            Voter List
+          </Text>
+          <form className="max-w-xl w-full rounded-4xl px-4 py-2 shadow border-2 border-gray-100">
+            <Flex className="gap-2 items-center">
+              <div>
+                <FaSearch color="gray" size={20} />
+              </div>
+              <input
+                type="search"
+                name="searchText"
+                id="searchText"
+                placeholder="Search by ID or Name"
+                value={filter.searchText}
+                onChange={(e) => handleSearchFilter(e)}
+                className="w-full outline-0 border-0 text-xl"
+              />
+            </Flex>
+          </form>
         </Flex>
-      </form>
-
+        <div className="shrink">
+          <button
+            onClick={() => setIsOpenAddVoterModal(true)}
+            className="bg-teal-500 hover:bg-teal-700 cursor-pointer text-white px-10 py-2 rounded-md font-semibold text-xl"
+          >
+            Add Voter
+          </button>
+        </div>
+      </Flex>
       <div className="text-nowrap overflow-x-auto">
         <table
           ref={tableDataStartsRef}
@@ -347,6 +375,13 @@ const VoterList: React.FC = () => {
         type={toastMessage?.type}
         toastMessage={toastMessage?.toastMessage}
         setToastMessage={setToastMessage}
+      />
+
+      {/* Add Voter Modal */}
+      <AddVoterModal
+        isOpen={isOpenAddVoterModal}
+        setIsOpen={setIsOpenAddVoterModal}
+        onSuccess={addVoter}
       />
 
       {/* Edit Voter Modal */}

@@ -1,6 +1,7 @@
 import { IoMdClose } from "react-icons/io";
-import Flex from "./ui/Flex";
-import Text from "./ui/Text";
+import Flex from "../ui/Flex";
+import Text from "../ui/Text";
+
 
 type TConfirmModal = {
   isOpen: boolean;
