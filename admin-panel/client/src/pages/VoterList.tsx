@@ -7,14 +7,8 @@ import Text from "../components/ui/Text";
 import { fontWeight } from "../components/utils/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import DeleteModal from "../components/DeleteModal";
-
-type TVoter = {
-  voterId: string;
-  voterName: string;
-  constituencyId: string;
-  dateOfBirth: string;
-  address: string;
-};
+import type { TVoter } from "../types/VoterTypes";
+import EditVoterModal from "../components/EditVoterModal";
 
 const voterListData: TVoter[] = [
   {
@@ -147,6 +141,8 @@ const VoterList: React.FC = () => {
 
   const [isOpenDeleteModal, setIsOpenDeleteModal] = useState<boolean>(false);
 
+  const [voterToBeEdited, setVoterToBeEdited] = useState<Partial<TVoter>>();
+
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
 
   const tableData = filter.searchText ? filteredVoterList : voterList;
@@ -167,10 +163,15 @@ const VoterList: React.FC = () => {
   const onCancel = () => {
     setIsOpenDeleteModal(false);
   };
-  const onDelete = () => {
+  const onDelete = useCallback(async () => {
     // TODO: Handle Delete Operation
     setIsOpenDeleteModal(false);
-  };
+  }, []);
+
+  const updateVoter = useCallback(async (updatedVoterData: Partial<TVoter>) => {
+    // TODO: Update Voter Operation
+    setVoterToBeEdited(undefined);
+  }, []);
 
   useEffect(() => {
     setVoterList(voterListData);
@@ -240,7 +241,12 @@ const VoterList: React.FC = () => {
                   <td className="text-center">{voter.constituencyId}</td>
                   <td className="text-center p-2">
                     <Flex className="gap-3 justify-center">
-                      <div className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl">
+                      <div
+                        onClick={() => {
+                          setVoterToBeEdited(voter);
+                        }}
+                        className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl"
+                      >
                         <CiEdit size={24} />
                       </div>
                       <div
@@ -257,9 +263,19 @@ const VoterList: React.FC = () => {
         </table>
       </div>
 
-      <Flex className="items-center justify-end mt-3">
+      <Flex className="items-center gap-4 justify-end mt-3">
         <Text size={6}>Pages</Text>
-        <FaAngleLeft cursor="pointer" size={20} />
+        <FaAngleLeft
+          cursor="pointer"
+          size={20}
+          onClick={() => {
+            setFilter((state) => ({
+              ...state,
+              pageNumber:
+                state.pageNumber > 1 ? state.pageNumber - 1 : state.pageNumber,
+            }));
+          }}
+        />
         <Flex className="items-center gap-2">
           {[...Array(pageCount)].map((_, i) => (
             <Text
@@ -281,8 +297,28 @@ const VoterList: React.FC = () => {
             </Text>
           ))}
         </Flex>
-        <FaAngleRight cursor="pointer" size={20} />
+        <FaAngleRight
+          cursor="pointer"
+          size={20}
+          onClick={() => {
+            setFilter((state) => ({
+              ...state,
+              pageNumber:
+                state.pageNumber < pageCount ? state.pageNumber + 1 : pageCount,
+            }));
+          }}
+        />
       </Flex>
+
+      {/* Edit Voter Modal */}
+      <EditVoterModal
+        isOpen={!!voterToBeEdited}
+        voterData={voterToBeEdited ?? {}}
+        onCancel={() => {
+          setVoterToBeEdited(undefined);
+        }}
+        onSuccess={updateVoter}
+      />
 
       {/* Delete Modal */}
       <DeleteModal
