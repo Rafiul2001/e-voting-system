@@ -6,79 +6,134 @@ import { FaAngleLeft, FaAngleRight, FaSearch } from "react-icons/fa";
 import Text from "../components/ui/Text";
 import { fontWeight } from "../components/utils/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
+import DeleteModal from "../components/DeleteModal";
 
-const voterListData = [
+type TVoter = {
+  voterId: string;
+  voterName: string;
+  constituencyId: string;
+  dateOfBirth: string;
+  address: string;
+};
+
+const voterListData: TVoter[] = [
   {
     voterId: "VOTER0001",
     voterName: "Shah Md. Rafiul Kadir",
     constituencyId: "CONSID0001",
+    dateOfBirth: "1999-05-14",
+    address: "Mohammadpur, Dhaka",
   },
   {
     voterId: "VOTER0002",
     voterName: "Md. Shohel Rana",
     constituencyId: "CONSID0001",
+    dateOfBirth: "1998-11-20",
+    address: "Mirpur, Dhaka",
   },
   {
     voterId: "VOTER0003",
     voterName: "Sajid Hossain Khan",
     constituencyId: "CONSID0002",
+    dateOfBirth: "2000-03-08",
+    address: "Dhanmondi, Dhaka",
   },
   {
     voterId: "VOTER0004",
     voterName: "Munia Tabassum Supti",
     constituencyId: "CONSID0003",
+    dateOfBirth: "2001-07-25",
+    address: "Banani, Dhaka",
   },
   {
     voterId: "VOTER0005",
     voterName: "Md. Fatin Ishrak Mahi",
     constituencyId: "CONSID0003",
+    dateOfBirth: "1999-09-12",
+    address: "Uttara, Dhaka",
   },
   {
     voterId: "VOTER0006",
     voterName: "Minhaj Morshed Chowdhury",
     constituencyId: "CONSID0002",
+    dateOfBirth: "1997-01-30",
+    address: "Chittagong",
   },
   {
-    voterId: "VOTER0001",
-    voterName: "Shah Md. Rafiul Kadir",
+    voterId: "VOTER0007",
+    voterName: "Farhana Akter Jui",
+    constituencyId: "CONSID0004",
+    dateOfBirth: "2000-02-18",
+    address: "Barisal",
+  },
+  {
+    voterId: "VOTER0008",
+    voterName: "Mahmudul Hasan",
     constituencyId: "CONSID0001",
+    dateOfBirth: "1996-08-09",
+    address: "Gazipur",
   },
   {
-    voterId: "VOTER0002",
-    voterName: "Md. Shohel Rana",
-    constituencyId: "CONSID0001",
+    voterId: "VOTER0009",
+    voterName: "Afsana Mim",
+    constituencyId: "CONSID0005",
+    dateOfBirth: "2002-06-21",
+    address: "Sylhet",
   },
   {
-    voterId: "VOTER0003",
-    voterName: "Sajid Hossain Khan",
+    voterId: "VOTER0010",
+    voterName: "Rakibul Islam",
     constituencyId: "CONSID0002",
+    dateOfBirth: "1995-04-11",
+    address: "Rajshahi",
   },
   {
-    voterId: "VOTER0004",
-    voterName: "Munia Tabassum Supti",
+    voterId: "VOTER0011",
+    voterName: "Nusrat Jahan",
+    constituencyId: "CONSID0004",
+    dateOfBirth: "1998-12-28",
+    address: "Khulna",
+  },
+  {
+    voterId: "VOTER0012",
+    voterName: "Tanvir Ahmed",
     constituencyId: "CONSID0003",
+    dateOfBirth: "1997-10-03",
+    address: "Comilla",
   },
   {
-    voterId: "VOTER0005",
-    voterName: "Md. Fatin Ishrak Mahi",
-    constituencyId: "CONSID0003",
+    voterId: "VOTER0013",
+    voterName: "Shamima Akter",
+    constituencyId: "CONSID0005",
+    dateOfBirth: "1999-07-19",
+    address: "Noakhali",
   },
   {
-    voterId: "VOTER0006",
-    voterName: "Minhaj Morshed Chowdhury",
+    voterId: "VOTER0014",
+    voterName: "Hasibul Kabir",
+    constituencyId: "CONSID0006",
+    dateOfBirth: "1996-03-27",
+    address: "Jessore",
+  },
+  {
+    voterId: "VOTER0015",
+    voterName: "Tahmina Haque",
+    constituencyId: "CONSID0006",
+    dateOfBirth: "2001-01-15",
+    address: "Mymensingh",
+  },
+  {
+    voterId: "VOTER0016",
+    voterName: "Arifur Rahman",
     constituencyId: "CONSID0002",
+    dateOfBirth: "1994-09-05",
+    address: "Bogura",
   },
 ];
 
 type TFilter = {
   searchText: string;
   pageNumber: number;
-};
-
-type TVoter = {
-  voterId: string;
-  voterName: string;
-  constituencyId: string;
 };
 
 const VoterList: React.FC = () => {
@@ -89,6 +144,8 @@ const VoterList: React.FC = () => {
     searchText: "",
     pageNumber: 1,
   });
+
+  const [isOpenDeleteModal, setIsOpenDeleteModal] = useState<boolean>(false);
 
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
 
@@ -106,6 +163,14 @@ const VoterList: React.FC = () => {
     },
     []
   );
+
+  const onCancel = () => {
+    setIsOpenDeleteModal(false);
+  };
+  const onDelete = () => {
+    // TODO: Handle Delete Operation
+    setIsOpenDeleteModal(false);
+  };
 
   useEffect(() => {
     setVoterList(voterListData);
@@ -176,7 +241,10 @@ const VoterList: React.FC = () => {
                     <div className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl">
                       <CiEdit size={24} />
                     </div>
-                    <div className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl">
+                    <div
+                      onClick={() => setIsOpenDeleteModal(true)}
+                      className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
+                    >
                       <MdDelete size={24} />
                     </div>
                   </Flex>
@@ -212,6 +280,14 @@ const VoterList: React.FC = () => {
         </Flex>
         <FaAngleRight cursor="pointer" size={20} />
       </Flex>
+
+      {/* Delete Modal */}
+      <DeleteModal
+        isOpen={isOpenDeleteModal}
+        onCancel={onCancel}
+        onDelete={onDelete}
+        confirmMessage="Want to delete"
+      />
     </Container>
   );
 };

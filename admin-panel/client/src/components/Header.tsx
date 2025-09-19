@@ -17,7 +17,7 @@ const navItems = [
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="shrink sticky top-0 bg-white shadow-md z-30">
       <Container>
         <Flex className="justify-between items-center">
           {/* Logo / Title */}
