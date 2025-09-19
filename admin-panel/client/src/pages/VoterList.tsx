@@ -211,48 +211,51 @@ const VoterList: React.FC = () => {
           />
         </Flex>
       </form>
-      <table
-        ref={tableDataStartsRef}
-        className="table-auto text-left w-full rounded-md overflow-hidden mt-5"
-      >
-        <thead>
-          <tr className="bg-gray-700 text-white">
-            <th className="w-10 p-2 text-center">No.</th>
-            <th className="w-52">Voter Id</th>
-            <th>Voter Name</th>
-            <th className="w-32 text-center">Constituency Id</th>
-            <th className="text-center w-[100px]">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tableData
-            .slice(
-              (filter.pageNumber - 1) * rowCount + 1,
-              filter.pageNumber * rowCount + 1
-            )
-            .map((voter, index) => (
-              <tr key={index} className="odd:bg-gray-100 even:bg-gray-200">
-                <td className="p-2 text-center">{index + 1}</td>
-                <td>{voter.voterId}</td>
-                <td>{voter.voterName}</td>
-                <td className="text-center">{voter.constituencyId}</td>
-                <td className="text-center p-2">
-                  <Flex className="gap-3 justify-center">
-                    <div className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl">
-                      <CiEdit size={24} />
-                    </div>
-                    <div
-                      onClick={() => setIsOpenDeleteModal(true)}
-                      className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
-                    >
-                      <MdDelete size={24} />
-                    </div>
-                  </Flex>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+
+      <div className="text-nowrap overflow-x-auto">
+        <table
+          ref={tableDataStartsRef}
+          className="table-auto text-left w-full rounded-md overflow-hidden mt-5"
+        >
+          <thead>
+            <tr className="bg-gray-700 text-white">
+              <th className="w-10 p-2 text-center">No.</th>
+              <th className="w-52 p-2">Voter Id</th>
+              <th className="p-2">Voter Name</th>
+              <th className="w-32 text-center p-2">Constituency Id</th>
+              <th className="text-center w-[100px] p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableData
+              .slice(
+                (filter.pageNumber - 1) * rowCount + 1,
+                filter.pageNumber * rowCount + 1
+              )
+              .map((voter, index) => (
+                <tr key={index} className="odd:bg-gray-100 even:bg-gray-200">
+                  <td className="p-2 text-center">{index + 1}</td>
+                  <td className="p-2">{voter.voterId}</td>
+                  <td className="p-2">{voter.voterName}</td>
+                  <td className="text-center">{voter.constituencyId}</td>
+                  <td className="text-center p-2">
+                    <Flex className="gap-3 justify-center">
+                      <div className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl">
+                        <CiEdit size={24} />
+                      </div>
+                      <div
+                        onClick={() => setIsOpenDeleteModal(true)}
+                        className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
+                      >
+                        <MdDelete size={24} />
+                      </div>
+                    </Flex>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
 
       <Flex className="items-center justify-end mt-3">
         <Text size={6}>Pages</Text>
