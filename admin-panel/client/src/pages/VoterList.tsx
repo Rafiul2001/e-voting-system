@@ -170,6 +170,7 @@ const VoterList: React.FC = () => {
 
   const updateVoter = useCallback(async (updatedVoterData: Partial<TVoter>) => {
     // TODO: Update Voter Operation
+    console.log(updatedVoterData);
     setVoterToBeEdited(undefined);
   }, []);
 
