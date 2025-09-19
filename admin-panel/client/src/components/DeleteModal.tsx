@@ -5,8 +5,8 @@ import Text from "./ui/Text";
 type TDeleteModal = {
   isOpen: boolean;
   confirmMessage: string;
-  onDelete?: () => void;
-  onCancel?: () => void;
+  onDelete: () => Promise<void>;
+  onCancel: () => void;
 };
 
 const DeleteModal: React.FC<TDeleteModal> = ({

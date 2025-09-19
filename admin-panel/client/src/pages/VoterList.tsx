@@ -9,9 +9,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import DeleteModal from "../components/DeleteModal";
 import type { TVoter } from "../types/VoterTypes";
 import EditVoterModal from "../components/EditVoterModal";
+import ToastModal from "../components/ToastModal";
 
 const voterListData: TVoter[] = [
   {
+    _id: "a1f92c",
     voterId: "VOTER0001",
     voterName: "Shah Md. Rafiul Kadir",
     constituencyId: "CONSID0001",
@@ -19,6 +21,7 @@ const voterListData: TVoter[] = [
     address: "Mohammadpur, Dhaka",
   },
   {
+    _id: "b3e47d",
     voterId: "VOTER0002",
     voterName: "Md. Shohel Rana",
     constituencyId: "CONSID0001",
@@ -26,6 +29,7 @@ const voterListData: TVoter[] = [
     address: "Mirpur, Dhaka",
   },
   {
+    _id: "c9a51f",
     voterId: "VOTER0003",
     voterName: "Sajid Hossain Khan",
     constituencyId: "CONSID0002",
@@ -33,6 +37,7 @@ const voterListData: TVoter[] = [
     address: "Dhanmondi, Dhaka",
   },
   {
+    _id: "d4b82a",
     voterId: "VOTER0004",
     voterName: "Munia Tabassum Supti",
     constituencyId: "CONSID0003",
@@ -40,6 +45,7 @@ const voterListData: TVoter[] = [
     address: "Banani, Dhaka",
   },
   {
+    _id: "e7f65c",
     voterId: "VOTER0005",
     voterName: "Md. Fatin Ishrak Mahi",
     constituencyId: "CONSID0003",
@@ -47,6 +53,7 @@ const voterListData: TVoter[] = [
     address: "Uttara, Dhaka",
   },
   {
+    _id: "f2c18b",
     voterId: "VOTER0006",
     voterName: "Minhaj Morshed Chowdhury",
     constituencyId: "CONSID0002",
@@ -54,6 +61,7 @@ const voterListData: TVoter[] = [
     address: "Chittagong",
   },
   {
+    _id: "g8e73d",
     voterId: "VOTER0007",
     voterName: "Farhana Akter Jui",
     constituencyId: "CONSID0004",
@@ -61,6 +69,7 @@ const voterListData: TVoter[] = [
     address: "Barisal",
   },
   {
+    _id: "h5a92f",
     voterId: "VOTER0008",
     voterName: "Mahmudul Hasan",
     constituencyId: "CONSID0001",
@@ -68,6 +77,7 @@ const voterListData: TVoter[] = [
     address: "Gazipur",
   },
   {
+    _id: "i7d34a",
     voterId: "VOTER0009",
     voterName: "Afsana Mim",
     constituencyId: "CONSID0005",
@@ -75,6 +85,7 @@ const voterListData: TVoter[] = [
     address: "Sylhet",
   },
   {
+    _id: "j9b62e",
     voterId: "VOTER0010",
     voterName: "Rakibul Islam",
     constituencyId: "CONSID0002",
@@ -82,6 +93,7 @@ const voterListData: TVoter[] = [
     address: "Rajshahi",
   },
   {
+    _id: "k3f41c",
     voterId: "VOTER0011",
     voterName: "Nusrat Jahan",
     constituencyId: "CONSID0004",
@@ -89,6 +101,7 @@ const voterListData: TVoter[] = [
     address: "Khulna",
   },
   {
+    _id: "l6a58d",
     voterId: "VOTER0012",
     voterName: "Tanvir Ahmed",
     constituencyId: "CONSID0003",
@@ -96,6 +109,7 @@ const voterListData: TVoter[] = [
     address: "Comilla",
   },
   {
+    _id: "m4e71b",
     voterId: "VOTER0013",
     voterName: "Shamima Akter",
     constituencyId: "CONSID0005",
@@ -103,6 +117,7 @@ const voterListData: TVoter[] = [
     address: "Noakhali",
   },
   {
+    _id: "n2c93f",
     voterId: "VOTER0014",
     voterName: "Hasibul Kabir",
     constituencyId: "CONSID0006",
@@ -110,6 +125,7 @@ const voterListData: TVoter[] = [
     address: "Jessore",
   },
   {
+    _id: "o5b14d",
     voterId: "VOTER0015",
     voterName: "Tahmina Haque",
     constituencyId: "CONSID0006",
@@ -117,6 +133,7 @@ const voterListData: TVoter[] = [
     address: "Mymensingh",
   },
   {
+    _id: "p7f82a",
     voterId: "VOTER0016",
     voterName: "Arifur Rahman",
     constituencyId: "CONSID0002",
@@ -139,9 +156,14 @@ const VoterList: React.FC = () => {
     pageNumber: 1,
   });
 
-  const [isOpenDeleteModal, setIsOpenDeleteModal] = useState<boolean>(false);
+  const [voterObjectId, setVoterObjectId] = useState<string>("");
 
   const [voterToBeEdited, setVoterToBeEdited] = useState<Partial<TVoter>>();
+
+  const [toastMessage, setToastMessage] = useState<{
+    type: string;
+    toastMessage: string;
+  }>();
 
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
 
@@ -150,23 +172,27 @@ const VoterList: React.FC = () => {
   const rowCount: number = 10;
   const pageCount: number = Math.ceil(totalData / rowCount);
 
-  const handleFilter = useCallback(
+  const handleSearchFilter = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       setFilter((state) => ({
         ...state,
-        searchText: e.target.value,
+        [e.target.name]: e.target.value,
       }));
     },
     []
   );
 
   const onCancel = () => {
-    setIsOpenDeleteModal(false);
+    setVoterObjectId("");
   };
   const onDelete = useCallback(async () => {
     // TODO: Handle Delete Operation
-    setIsOpenDeleteModal(false);
-  }, []);
+    setToastMessage({
+      type: "Success",
+      toastMessage: `Deleted With object id: ${voterObjectId}`,
+    });
+    setVoterObjectId("");
+  }, [voterObjectId]);
 
   const updateVoter = useCallback(async (updatedVoterData: Partial<TVoter>) => {
     // TODO: Update Voter Operation
@@ -188,7 +214,7 @@ const VoterList: React.FC = () => {
   }, [filter, voterList]);
 
   return (
-    <Container>
+    <Container className="relative overflow-hidden">
       <Text
         size={3}
         weight={fontWeight.semiBold}
@@ -204,11 +230,11 @@ const VoterList: React.FC = () => {
           </div>
           <input
             type="search"
-            name="voter"
-            id="voter"
+            name="searchText"
+            id="searchText"
             placeholder="Search by ID or Name"
             value={filter.searchText}
-            onChange={(e) => handleFilter(e)}
+            onChange={(e) => handleSearchFilter(e)}
             className="w-full outline-0 border-0 text-xl"
           />
         </Flex>
@@ -231,8 +257,8 @@ const VoterList: React.FC = () => {
           <tbody>
             {tableData
               .slice(
-                (filter.pageNumber - 1) * rowCount + 1,
-                filter.pageNumber * rowCount + 1
+                (filter.pageNumber - 1) * rowCount,
+                filter.pageNumber * rowCount
               )
               .map((voter, index) => (
                 <tr key={index} className="odd:bg-gray-100 even:bg-gray-200">
@@ -251,7 +277,7 @@ const VoterList: React.FC = () => {
                         <CiEdit size={24} />
                       </div>
                       <div
-                        onClick={() => setIsOpenDeleteModal(true)}
+                        onClick={() => setVoterObjectId(voter._id)}
                         className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
                       >
                         <MdDelete size={24} />
@@ -283,9 +309,14 @@ const VoterList: React.FC = () => {
               key={i}
               onClick={() => {
                 setFilter((state) => ({ ...state, pageNumber: i + 1 }));
-                tableDataStartsRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                });
+
+                if (tableDataStartsRef.current) {
+                  const y =
+                    tableDataStartsRef.current.getBoundingClientRect().top +
+                    window.scrollY -
+                    200; // offset from top
+                  window.scrollTo({ top: y, behavior: "smooth" });
+                }
               }}
               weight={fontWeight.semiBold}
               className={`px-2 py-1 cursor-pointer ${
@@ -311,6 +342,13 @@ const VoterList: React.FC = () => {
         />
       </Flex>
 
+      {/* Tost Modal */}
+      <ToastModal
+        type={toastMessage?.type}
+        toastMessage={toastMessage?.toastMessage}
+        setToastMessage={setToastMessage}
+      />
+
       {/* Edit Voter Modal */}
       <EditVoterModal
         isOpen={!!voterToBeEdited}
@@ -323,7 +361,7 @@ const VoterList: React.FC = () => {
 
       {/* Delete Modal */}
       <DeleteModal
-        isOpen={isOpenDeleteModal}
+        isOpen={!!voterObjectId}
         onCancel={onCancel}
         onDelete={onDelete}
         confirmMessage="Want to delete"
