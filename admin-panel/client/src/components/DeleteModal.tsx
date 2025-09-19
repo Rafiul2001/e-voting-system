@@ -2,14 +2,14 @@ import { IoMdClose } from "react-icons/io";
 import Flex from "./ui/Flex";
 import Text from "./ui/Text";
 
-type TConfirmModal = {
+type TDeleteModal = {
   isOpen: boolean;
   confirmMessage: string;
   onDelete?: () => void;
   onCancel?: () => void;
 };
 
-const DeleteModal: React.FC<TConfirmModal> = ({
+const DeleteModal: React.FC<TDeleteModal> = ({
   isOpen,
   confirmMessage,
   onDelete,
