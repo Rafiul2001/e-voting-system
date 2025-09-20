@@ -89,7 +89,7 @@ export const deleteCandidateResponse = z.object({
 
 // Update Operations
 export const updateCandidateParams = z.object({
-  candidateObjectId: z.string(),
+  voterId: z.string(),
 });
 
 export const updateCandidateBody = z
@@ -98,7 +98,6 @@ export const updateCandidateBody = z
       .enum(Object.values(AFFILIATION_TYPE) as [string, ...string[]])
       .optional(),
     partyName: z.string().optional(),
-    constituency: constituencyDetails.optional(),
   })
   .refine(
     (data) => {

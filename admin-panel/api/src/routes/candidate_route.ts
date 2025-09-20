@@ -46,8 +46,8 @@ candidateRouter.post(
       const {
         voterId,
         electionId,
-        constituencyId,
-        voterName,
+        candidateName,
+        constituency,
         affiliationType,
         partyName,
       } = createCandidateBody.parse(req.body);
@@ -68,10 +68,13 @@ candidateRouter.post(
           message: "Affiliation and party name must be same for same candidate",
         });
 
-      const dataFoundUsingConstituencyId = data.find((can) => {
-        return can.constituencyId?.toString() === constituencyId;
+      const dataFoundUsingConstituencyNumber = data.find((can) => {
+        return (
+          can.constituency.constituencyNumber ===
+          constituency.constituencyNumber
+        );
       });
-      if (data.length > 0 && dataFoundUsingConstituencyId)
+      if (data.length > 0 && dataFoundUsingConstituencyNumber)
         return res.status(409).json({
           message: "Already registered with this constituency",
         });
@@ -82,10 +85,10 @@ candidateRouter.post(
         });
 
       const newCandidate = new CandidateModel(
-        voterName,
+        candidateName,
         new ObjectId(voterId),
         new ObjectId(electionId),
-        new ObjectId(constituencyId),
+        constituency,
         affiliationType as (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE],
         partyName
       );
@@ -106,15 +109,15 @@ candidateRouter.post(
 
 // Delete Candidate
 candidateRouter.delete(
-  "/delete/:candidateId",
+  "/delete/:candidateObjectId",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { candidateId } = deleteCandidateParams.parse(req.params);
+      const { candidateObjectId } = deleteCandidateParams.parse(req.params);
 
       const data = await database
         .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .findOneAndDelete({ _id: new ObjectId(candidateId) });
+        .findOneAndDelete({ _id: new ObjectId(candidateObjectId) });
 
       if (!data)
         return res.status(404).json({
