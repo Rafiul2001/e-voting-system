@@ -26,7 +26,7 @@ const constituency = z
   });
 
 // Get all voters depending on ward number
-export const getAllConstituenciesBody = z.object({
+export const getAllWardVotersBody = z.object({
   divisionName: z.string(),
   districtName: z.string(),
   constituencyNumber: z.number(),

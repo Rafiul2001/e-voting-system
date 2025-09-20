@@ -3,7 +3,7 @@ import { verifyToken } from "../middlewares/verifyToken";
 import {
   createVoterBody,
   deleteVoterParams,
-  getAllVotersParams,
+  getAllWardVotersBody,
   updateVoterBody,
   updateVoterParams,
 } from "../../shared/validators/voterValidator";
@@ -16,20 +16,55 @@ const voterRouter = Router();
 
 // Get all voters
 voterRouter.get(
-  "/get-all/:constituencyId",
+  "/get-all",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { constituencyId } = getAllVotersParams.parse(req.params);
+      const {
+        constituencyName,
+        constituencyNumber,
+        districtName,
+        divisionName,
+        upazila,
+        cityCorporation,
+      } = getAllWardVotersBody.parse(req.body);
+
+      const query: any = {};
+
+      // Always check the higher level fields
+      if (divisionName) query.divisionName = divisionName;
+      if (districtName) query.districtName = districtName;
+      if (constituencyName) query.constituencyName = constituencyName;
+      if (constituencyNumber) query.constituencyNumber = constituencyNumber;
+
+      // Check for upazila-based voter
+      if (
+        upazila?.upazilaName &&
+        upazila?.unionName &&
+        upazila?.wardNumber !== undefined
+      ) {
+        query["upazila.upazilaName"] = upazila.upazilaName;
+        query["upazila.unionName"] = upazila.unionName;
+        query["upazila.wardNumber"] = upazila.wardNumber;
+      }
+
+      // Or check for city corporation-based voter
+      if (
+        cityCorporation?.cityCorporationName &&
+        cityCorporation?.wardNumber !== undefined
+      ) {
+        query["cityCorporation.cityCorporationName"] =
+          cityCorporation.cityCorporationName;
+        query["cityCorporation.wardNumber"] = cityCorporation.wardNumber;
+      }
+
       const voterList = await database
         .collection<VoterModel>(CollectionListNames.VOTER)
-        .find({
-          constituencyId: new ObjectId(constituencyId),
-        })
+        .find(query)
         .toArray();
 
       return res.status(200).json({
-        message: "Successfully get all voters",
+        message: "Successfully fetched voters",
         voterList: voterList,
       });
     } catch (error) {
@@ -44,23 +79,8 @@ voterRouter.post(
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { voterId, constituencyId, voterName, dateOfBirth, address } =
+      const { voterId, voterName, constituency, dateOfBirth } =
         createVoterBody.parse(req.body);
-
-      // Validate constituencyId
-      if (!ObjectId.isValid(constituencyId)) {
-        return res.status(400).json({
-          message: "Invalid constituencyId format",
-        });
-      }
-
-      const newVoter = new VoterModel(
-        voterId,
-        new ObjectId(constituencyId),
-        voterName,
-        dateOfBirth,
-        address
-      );
 
       const exist = await database
         .collection<VoterModel>(CollectionListNames.VOTER)
@@ -72,6 +92,39 @@ voterRouter.post(
         return res.status(409).json({
           message: "VoterId already exists",
         });
+
+      let constituencyNew: any;
+
+      if (constituency.upazila) {
+        constituencyNew = {
+          divisionName: constituency.divisionName,
+          districtName: constituency.districtName,
+          constituencyNumber: constituency.constituencyNumber,
+          constituencyName: constituency.constituencyName,
+          homeAddress: constituency.homeAddress,
+          upazila: constituency.upazila,
+        };
+      } else if (constituency.cityCorporation) {
+        constituencyNew = {
+          divisionName: constituency.divisionName,
+          districtName: constituency.districtName,
+          constituencyNumber: constituency.constituencyNumber,
+          constituencyName: constituency.constituencyName,
+          homeAddress: constituency.homeAddress,
+          cityCorporation: constituency.cityCorporation,
+        };
+      } else {
+        return res.status(409).json({
+          message: "Constituency must contain upazila or city corporation",
+        });
+      }
+
+      const newVoter = new VoterModel(
+        voterId,
+        voterName,
+        dateOfBirth,
+        constituencyNew
+      );
 
       await database
         .collection<VoterModel>(CollectionListNames.VOTER)
@@ -108,14 +161,7 @@ voterRouter.delete(
 
       return res.status(200).json({
         message: "Successfully deleted voter",
-        voter: {
-          _id: data?._id,
-          voterId: data?.voterId,
-          constituencyId: data?.constituencyId,
-          voterName: data?.voterName,
-          dateOfBirth: data?.dateOfBirth,
-          address: data?.address,
-        },
+        voter: data,
       });
     } catch (error) {
       next(error);
@@ -131,17 +177,22 @@ voterRouter.put(
     try {
       const { voterObjectId } = updateVoterParams.parse(req.params);
 
-      const { constituencyId, voterName, dateOfBirth, address } =
+      const { voterName, dateOfBirth, homeAddress, constituency } =
         updateVoterBody.parse(req.body);
 
       const updateFields: any = {};
 
-      // Add only fields that exist in the request
-      if (constituencyId)
-        updateFields.constituencyId = new ObjectId(constituencyId);
+      // top-level fields
       if (voterName) updateFields.voterName = voterName;
       if (dateOfBirth) updateFields.dateOfBirth = dateOfBirth;
-      if (address) updateFields.address = address;
+
+      // nested constituency updates
+      if (homeAddress) updateFields["constituency.homeAddress"] = homeAddress;
+      if (constituency) {
+        for (const [key, value] of Object.entries(constituency)) {
+          updateFields[`constituency.${key}`] = value;
+        }
+      }
 
       const data = await database
         .collection<VoterModel>(CollectionListNames.VOTER)
@@ -151,21 +202,13 @@ voterRouter.put(
           { returnDocument: "after" }
         );
 
-      if (!data)
-        return res.status(404).json({
-          message: "Voter not found",
-        });
+      if (!data) {
+        return res.status(404).json({ message: "Voter not found" });
+      }
 
       return res.status(200).json({
         message: "Successfully updated",
-        voter: {
-          _id: data?._id,
-          voterId: data?.voterId,
-          constituencyId: data?.constituencyId,
-          voterName: data?.voterName,
-          dateOfBirth: data?.dateOfBirth,
-          address: data?.address,
-        },
+        voter: data,
       });
     } catch (error) {
       next(error);
