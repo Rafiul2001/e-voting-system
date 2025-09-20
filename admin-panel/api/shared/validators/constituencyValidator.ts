@@ -49,34 +49,7 @@ export const createNewDivisionBody = z.object({
 export const createNewDivisionResponse = z.object({
   message: z.string(),
   constituency: z.object({
-    divisionName: z.string(),
-    districts: z.array(district),
-  }),
-});
-
-// Add a part of constituency model
-export const addConstituencyPartParams = z.object({
-  constituencyObjectId: z.string(),
-});
-
-export const addConstituencyPartBody = z.object({
-  districtName: z.string().optional(),
-  constituency: z
-    .object({
-      constituencyNumber: z.number(),
-      constituencyName: z.string(),
-    })
-    .optional(),
-  cityCorporationName: z.string().optional(),
-  cityCorporationWard: z.number().optional(),
-  upazilaName: z.string().optional(),
-  unionName: z.string().optional(),
-  unionWard: z.number().optional(),
-});
-
-export const addConstituencyPartResponse = z.object({
-  message: z.string(),
-  constituency: z.object({
+    _id: z.string(),
     divisionName: z.string(),
     districts: z.array(district),
   }),
@@ -88,51 +61,14 @@ export const updateConstituencyPartParams = z.object({
 });
 
 export const updateConstituencyPartBody = z.object({
-  districtName: z.string().optional(),
-  constituency: z
-    .object({
-      constituencyNumber: z.number(),
-      constituencyName: z.string(),
-    })
-    .optional(),
-  cityCorporationName: z.string().optional(),
-  cityCorporationWard: z.number().optional(),
-  upazilaName: z.string().optional(),
-  unionName: z.string().optional(),
-  unionWard: z.number().optional(),
+  divisionName: z.string().optional(),
+  districts: z.array(district).optional(),
 });
 
 export const updateConstituencyPartResponse = z.object({
   message: z.string(),
   constituency: z.object({
-    divisionName: z.string(),
-    districts: z.array(district),
-  }),
-});
-
-// Delete a part of constituency model
-export const deleteConstituencyPartParams = z.object({
-  constituencyObjectId: z.string(),
-});
-
-export const deleteConstituencyPartBody = z.object({
-  districtName: z.string().optional(),
-  constituency: z
-    .object({
-      constituencyNumber: z.number(),
-      constituencyName: z.string(),
-    })
-    .optional(),
-  cityCorporationName: z.string().optional(),
-  cityCorporationWard: z.number().optional(),
-  upazilaName: z.string().optional(),
-  unionName: z.string().optional(),
-  unionWard: z.number().optional(),
-});
-
-export const deleteConstituencyPartResponse = z.object({
-  message: z.string(),
-  constituency: z.object({
+    _id: z.string(),
     divisionName: z.string(),
     districts: z.array(district),
   }),
@@ -146,6 +82,7 @@ export const deleteConstituencyParams = z.object({
 export const deleteConstituencyResponse = z.object({
   message: z.string(),
   constituency: z.object({
+    _id: z.string(),
     divisionName: z.string(),
     districts: z.array(district),
   }),
