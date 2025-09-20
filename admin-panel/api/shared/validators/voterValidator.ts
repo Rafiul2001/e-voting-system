@@ -1,8 +1,38 @@
 import z from "zod";
 
-// Get all voters depending on constituency Id
-export const getAllVotersParams = z.object({
-  constituencyId: z.string(),
+const upazilaAddress = z.object({
+  upazilaName: z.string(),
+  unionName: z.string(),
+  wardNumber: z.number(),
+});
+
+const cityCorporationAddress = z.object({
+  cityCorporationName: z.string(),
+  wardNumber: z.number(),
+});
+
+const constituency = z
+  .object({
+    divisionName: z.string(),
+    districtName: z.string(),
+    constituencyNumber: z.number(),
+    constituencyName: z.string(),
+    homeAddress: z.string(),
+    upazila: upazilaAddress.optional(),
+    cityCorporation: cityCorporationAddress.optional(),
+  })
+  .refine((data) => data.upazila || data.cityCorporation, {
+    message: "Either upazila or cityCorporation must be provided",
+  });
+
+// Get all voters depending on ward number
+export const getAllConstituenciesBody = z.object({
+  divisionName: z.string(),
+  districtName: z.string(),
+  constituencyNumber: z.number(),
+  constituencyName: z.string(),
+  upazila: upazilaAddress.optional(),
+  cityCorporation: cityCorporationAddress.optional(),
 });
 
 export const getAllVotersResponse = z.object({
@@ -11,10 +41,9 @@ export const getAllVotersResponse = z.object({
     z.object({
       _id: z.string(),
       voterId: z.string(),
-      constituencyId: z.string(),
       voterName: z.string(),
       dateOfBirth: z.string(),
-      address: z.string(),
+      constituency: constituency,
     })
   ),
 });
@@ -22,10 +51,9 @@ export const getAllVotersResponse = z.object({
 // Create voter
 export const createVoterBody = z.object({
   voterId: z.string(),
-  constituencyId: z.string(),
   voterName: z.string(),
   dateOfBirth: z.string(),
-  address: z.string(),
+  constituency: constituency,
 });
 
 export const createVoterResponse = z.object({
@@ -33,10 +61,9 @@ export const createVoterResponse = z.object({
   voter: z.object({
     _id: z.string(),
     voterId: z.string(),
-    constituencyId: z.string(),
     voterName: z.string(),
     dateOfBirth: z.string(),
-    address: z.string(),
+    constituency: constituency,
   }),
 });
 
@@ -50,10 +77,9 @@ export const deleteVoterResponse = z.object({
   voter: z.object({
     _id: z.string(),
     voterId: z.string(),
-    constituencyId: z.string(),
     voterName: z.string(),
     dateOfBirth: z.string(),
-    address: z.string(),
+    constituency: constituency,
   }),
 });
 
@@ -63,10 +89,15 @@ export const updateVoterParams = z.object({
 });
 
 export const updateVoterBody = z.object({
-  constituencyId: z.string().optional(),
   voterName: z.string().optional(),
   dateOfBirth: z.string().optional(),
-  address: z.string().optional(),
+  homeAddress: z.string().optional(),
+  constituency: constituency
+    .partial()
+    .optional()
+    .refine((data) => !data || Object.keys(data).length > 0, {
+      message: "Constituency must not be empty if provided",
+    }),
 });
 
 export const updateVoterResponse = z.object({
@@ -74,9 +105,8 @@ export const updateVoterResponse = z.object({
   voter: z.object({
     _id: z.string(),
     voterId: z.string(),
-    constituencyId: z.string(),
     voterName: z.string(),
     dateOfBirth: z.string(),
-    address: z.string(),
+    constituency: constituency,
   }),
 });

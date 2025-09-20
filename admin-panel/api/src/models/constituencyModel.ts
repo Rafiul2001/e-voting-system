@@ -15,14 +15,18 @@ type TCityCorporation = {
   wards: number[];
 };
 
-type TDistrict = {
-  districtName: string;
+type TConstituency = {
   constituencyNumber: number;
   constituencyName: string;
   boundaries: {
     upazilas?: TUpazila[];
     cityCorporations?: TCityCorporation[];
   };
+};
+
+type TDistrict = {
+  districtName: string;
+  constituencies: TConstituency[];
 };
 
 export interface IConstituencyModel {
