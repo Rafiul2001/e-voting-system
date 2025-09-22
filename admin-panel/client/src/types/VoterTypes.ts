@@ -1,8 +1,30 @@
+type TVoterBase = {
+  divisionName: string;
+  districtName: string;
+  constituencyNumber: number;
+  constituencyName: string;
+  homeAddress: string;
+};
+
+type TVoterConstituency =
+  | (TVoterBase & {
+      upazila: {
+        upazilaName: string;
+        unionName: string;
+        wardNumber: number;
+      };
+    })
+  | (TVoterBase & {
+      cityCorporation: {
+        cityCorporationName: string;
+        wardNumber: number;
+      };
+    });
+
 export type TVoter = {
   _id: string;
   voterId: string;
   voterName: string;
-  constituencyId: string;
   dateOfBirth: string;
-  address: string;
+  constituency: TVoterConstituency;
 };

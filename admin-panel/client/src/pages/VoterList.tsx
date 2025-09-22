@@ -11,137 +11,7 @@ import ToastModal from "../components/ToastModal";
 import EditVoterModal from "../components/modals/voter/EditVoterModal";
 import DeleteModal from "../components/modals/DeleteModal";
 import AddVoterModal from "../components/modals/voter/AddVoterModal";
-
-const voterListData: TVoter[] = [
-  {
-    _id: "a1f92c",
-    voterId: "VOTER0001",
-    voterName: "Shah Md. Rafiul Kadir",
-    constituencyId: "CONSID0001",
-    dateOfBirth: "1999-05-14",
-    address: "Mohammadpur, Dhaka",
-  },
-  {
-    _id: "b3e47d",
-    voterId: "VOTER0002",
-    voterName: "Md. Shohel Rana",
-    constituencyId: "CONSID0001",
-    dateOfBirth: "1998-11-20",
-    address: "Mirpur, Dhaka",
-  },
-  {
-    _id: "c9a51f",
-    voterId: "VOTER0003",
-    voterName: "Sajid Hossain Khan",
-    constituencyId: "CONSID0002",
-    dateOfBirth: "2000-03-08",
-    address: "Dhanmondi, Dhaka",
-  },
-  {
-    _id: "d4b82a",
-    voterId: "VOTER0004",
-    voterName: "Munia Tabassum Supti",
-    constituencyId: "CONSID0003",
-    dateOfBirth: "2001-07-25",
-    address: "Banani, Dhaka",
-  },
-  {
-    _id: "e7f65c",
-    voterId: "VOTER0005",
-    voterName: "Md. Fatin Ishrak Mahi",
-    constituencyId: "CONSID0003",
-    dateOfBirth: "1999-09-12",
-    address: "Uttara, Dhaka",
-  },
-  {
-    _id: "f2c18b",
-    voterId: "VOTER0006",
-    voterName: "Minhaj Morshed Chowdhury",
-    constituencyId: "CONSID0002",
-    dateOfBirth: "1997-01-30",
-    address: "Chittagong",
-  },
-  {
-    _id: "g8e73d",
-    voterId: "VOTER0007",
-    voterName: "Farhana Akter Jui",
-    constituencyId: "CONSID0004",
-    dateOfBirth: "2000-02-18",
-    address: "Barisal",
-  },
-  {
-    _id: "h5a92f",
-    voterId: "VOTER0008",
-    voterName: "Mahmudul Hasan",
-    constituencyId: "CONSID0001",
-    dateOfBirth: "1996-08-09",
-    address: "Gazipur",
-  },
-  {
-    _id: "i7d34a",
-    voterId: "VOTER0009",
-    voterName: "Afsana Mim",
-    constituencyId: "CONSID0005",
-    dateOfBirth: "2002-06-21",
-    address: "Sylhet",
-  },
-  {
-    _id: "j9b62e",
-    voterId: "VOTER0010",
-    voterName: "Rakibul Islam",
-    constituencyId: "CONSID0002",
-    dateOfBirth: "1995-04-11",
-    address: "Rajshahi",
-  },
-  {
-    _id: "k3f41c",
-    voterId: "VOTER0011",
-    voterName: "Nusrat Jahan",
-    constituencyId: "CONSID0004",
-    dateOfBirth: "1998-12-28",
-    address: "Khulna",
-  },
-  {
-    _id: "l6a58d",
-    voterId: "VOTER0012",
-    voterName: "Tanvir Ahmed",
-    constituencyId: "CONSID0003",
-    dateOfBirth: "1997-10-03",
-    address: "Comilla",
-  },
-  {
-    _id: "m4e71b",
-    voterId: "VOTER0013",
-    voterName: "Shamima Akter",
-    constituencyId: "CONSID0005",
-    dateOfBirth: "1999-07-19",
-    address: "Noakhali",
-  },
-  {
-    _id: "n2c93f",
-    voterId: "VOTER0014",
-    voterName: "Hasibul Kabir",
-    constituencyId: "CONSID0006",
-    dateOfBirth: "1996-03-27",
-    address: "Jessore",
-  },
-  {
-    _id: "o5b14d",
-    voterId: "VOTER0015",
-    voterName: "Tahmina Haque",
-    constituencyId: "CONSID0006",
-    dateOfBirth: "2001-01-15",
-    address: "Mymensingh",
-  },
-  {
-    _id: "p7f82a",
-    voterId: "VOTER0016",
-    voterName: "Arifur Rahman",
-    constituencyId: "CONSID0002",
-    dateOfBirth: "1994-09-05",
-    address: "Bogura",
-  },
-];
+import { voterListData } from "../testingData/voterListDataSample";
 
 type TFilter = {
   searchText: string;
@@ -278,7 +148,8 @@ const VoterList: React.FC = () => {
               <th className="w-10 p-2 text-center">No.</th>
               <th className="w-52 p-2">Voter Id</th>
               <th className="p-2">Voter Name</th>
-              <th className="w-32 text-center p-2">Constituency Id</th>
+              <th className="w-32 text-center p-2">Constituency Number</th>
+              <th className="w-32 text-center p-2">Constituency Name</th>
               <th className="text-center w-[100px] p-2">Actions</th>
             </tr>
           </thead>
@@ -293,7 +164,12 @@ const VoterList: React.FC = () => {
                   <td className="p-2 text-center">{index + 1}</td>
                   <td className="p-2">{voter.voterId}</td>
                   <td className="p-2">{voter.voterName}</td>
-                  <td className="text-center">{voter.constituencyId}</td>
+                  <td className="w-32 text-center p-2">
+                    {voter.constituency.constituencyNumber}
+                  </td>
+                  <td className="text-center">
+                    {voter.constituency.constituencyName}
+                  </td>
                   <td className="text-center p-2">
                     <Flex className="gap-3 justify-center">
                       <div
