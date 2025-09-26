@@ -55,10 +55,14 @@ export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
   },
 
   updateConstituency: (constituencyObject) => {
-    // TODO: Add the route of the update API
+    console.log(constituencyObject);
     set((state) => ({
       message: "Updated!",
-      divisionList: [...state.divisionList, constituencyObject],
+      divisionList: state.divisionList.map((division) =>
+        division.divisionName === constituencyObject.divisionName
+          ? constituencyObject // create a new object
+          : division
+      ),
     }));
   },
 
