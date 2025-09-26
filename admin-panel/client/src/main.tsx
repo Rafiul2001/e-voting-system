@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
 import ConstituencyList from "./pages/ConstituencyList.tsx";
+import EditConstituency from "./pages/EditConstituency.tsx";
 
 const router = createBrowserRouter([
   {
@@ -21,19 +22,23 @@ const router = createBrowserRouter([
         Component: Home,
       },
       {
-        path: "/voter-records",
+        path: "voter-records",
         Component: VoterList,
       },
       {
-        path: "/constituency-records",
+        path: "constituency-records",
         Component: ConstituencyList,
       },
       {
-        path: "/candidate-records",
+        path: "constituency-records/:constituencyNumber",
+        Component: EditConstituency,
+      },
+      {
+        path: "candidate-records",
         Component: CandidateList,
       },
       {
-        path: "/election-records",
+        path: "election-records",
         Component: ElectionList,
       },
       {
