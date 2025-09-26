@@ -41,13 +41,12 @@ const ConstituencyList: React.FC = () => {
     [filter, setFilter]
   );
 
+  const filteredDivisionObject = useConstituencyStore((s) =>
+    s.getFilteredDivisionObject()
+  );
+
   // Compute filtered lists inside component (no infinite loop)
-  const filteredDistrictList =
-    divisionList.find(
-      (division) =>
-        division.divisionName.toLowerCase() ===
-        filter.divisionName.toLowerCase()
-    )?.districts || [];
+  const filteredDistrictList = filteredDivisionObject?.districts || [];
 
   const filteredConstituencyList =
     filteredDistrictList.find(
