@@ -19,6 +19,7 @@ const ConstituencyList: React.FC = () => {
   const divisionList = useConstituencyStore((s) => s.divisionList);
   const filter = useConstituencyStore((s) => s.filter);
   const setFilter = useConstituencyStore((s) => s.setFilter);
+  const addDivision = useConstituencyStore((s) => s.addDivision);
   const updateConstituency = useConstituencyStore((s) => s.updateConstituency);
 
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
@@ -28,23 +29,44 @@ const ConstituencyList: React.FC = () => {
   }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Dynamic modal type: "division" | "district" | "constituency"
+  const [modalType, setModalType] = useState<
+    "division" | "district" | "constituency"
+  >("constituency");
+
   // Delete modal state
   const [deleteFunction, setDeleteFunction] = useState<() => Promise<void>>();
 
-  // Constituency form fields
+  // Form fields for modal
+  const divisionFields: TFormField[] = [
+    {
+      name: "divisionName",
+      label: "Division Name",
+      type: "text",
+      required: true,
+    },
+  ];
+
+  const districtFields: TFormField[] = [
+    {
+      name: "districtName",
+      label: "District Name",
+      type: "text",
+      required: true,
+    },
+  ];
+
   const constituencyFields: TFormField[] = [
     {
       name: "constituencyNumber",
       label: "Constituency Number",
       type: "number",
-      placeholder: "Enter constituency number",
       required: true,
     },
     {
       name: "constituencyName",
       label: "Constituency Name",
       type: "text",
-      placeholder: "Enter constituency name",
       required: true,
     },
   ];
@@ -79,6 +101,60 @@ const ConstituencyList: React.FC = () => {
   const rowCount: number = 10;
   const pageCount: number = Math.ceil(totalData / rowCount);
 
+  /** ----------------- MODAL HANDLERS ----------------- **/
+
+  const handleAddDivision = async (data: Record<string, string>) => {
+    const divisionName = data.divisionName?.trim();
+    if (!divisionName) return;
+
+    const toast = await addDivision(divisionName);
+    setToastMessage(toast);
+  };
+
+  const handleAddDistrict = async (data: Record<string, string>) => {
+    const divisionName = filter.divisionName;
+    const districtName = data.districtName?.trim();
+
+    if (!divisionName) {
+      setToastMessage({
+        type: "error",
+        toastMessage: "Please select a division first.",
+      });
+      return;
+    }
+
+    if (!districtName) return;
+
+    const division = divisionList.find((d) => d.divisionName === divisionName);
+    if (!division) {
+      setToastMessage({
+        type: "error",
+        toastMessage: "Selected division does not exist.",
+      });
+      return;
+    }
+
+    const districtExists = division.districts.some(
+      (d) => d.districtName.toLowerCase() === districtName.toLowerCase()
+    );
+
+    if (districtExists) {
+      setToastMessage({
+        type: "error",
+        toastMessage: `District "${districtName}" already exists in ${divisionName}.`,
+      });
+      return;
+    }
+
+    const updatedDivision: TConstituencyModel = {
+      ...division,
+      districts: [...division.districts, { districtName, constituencies: [] }],
+    };
+
+    const toast = await updateConstituency(updatedDivision);
+    setToastMessage(toast);
+  };
+
   const handleAddConstituency = async (data: Record<string, string>) => {
     if (!filter.divisionName || !filter.districtName) {
       setToastMessage({
@@ -89,7 +165,6 @@ const ConstituencyList: React.FC = () => {
     }
 
     const newConstituencyNumber = Number(data.constituencyNumber);
-
     const division = divisionList.find(
       (d) => d.divisionName === filter.divisionName
     );
@@ -104,7 +179,6 @@ const ConstituencyList: React.FC = () => {
     const exists = district.constituencies.some(
       (c) => c.constituencyNumber === newConstituencyNumber
     );
-
     if (exists) {
       setToastMessage({
         type: "error",
@@ -152,7 +226,7 @@ const ConstituencyList: React.FC = () => {
     );
     if (!constituencyToDelete) return;
 
-    // ✅ Check if constituency has boundaries
+    // Check if constituency has boundaries
     if (
       (constituencyToDelete.boundaries.upazilas?.length || 0) > 0 ||
       (constituencyToDelete.boundaries.cityCorporations?.length || 0) > 0
@@ -248,14 +322,47 @@ const ConstituencyList: React.FC = () => {
           </form>
         </Flex>
 
-        <div className="shrink">
+        <Flex className="shrink gap-3">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-teal-500 hover:bg-teal-700 cursor-pointer text-white px-10 py-2 rounded-md font-semibold text-xl"
+            onClick={() => {
+              setModalType("constituency");
+              setIsModalOpen(true);
+            }}
+            disabled={!filter.divisionName || !filter.districtName} // disabled if either is missing
+            className={`px-10 py-2 rounded-md font-semibold text-xl text-white ${
+              !filter.divisionName || !filter.districtName
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-teal-500 hover:bg-teal-700"
+            }`}
           >
-            Add a constituency
+            Add Constituency
           </button>
-        </div>
+
+          <button
+            onClick={() => {
+              setModalType("division");
+              setIsModalOpen(true);
+            }}
+            className="bg-indigo-500 hover:bg-indigo-700 text-white px-10 py-2 rounded-md font-semibold text-xl"
+          >
+            Add Division
+          </button>
+
+          <button
+            onClick={() => {
+              setModalType("district");
+              setIsModalOpen(true);
+            }}
+            disabled={!filter.divisionName}
+            className={`px-10 py-2 rounded-md font-semibold text-xl text-white ${
+              !filter.divisionName
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-orange-500 hover:bg-orange-700"
+            }`}
+          >
+            Add District
+          </button>
+        </Flex>
       </Flex>
 
       {/* Table */}
@@ -339,12 +446,12 @@ const ConstituencyList: React.FC = () => {
         <FaAngleLeft
           cursor="pointer"
           size={20}
-          onClick={() => {
+          onClick={() =>
             setFilter({
               ...filter,
               pageNumber: Math.max(filter.pageNumber - 1, 1),
-            });
-          }}
+            })
+          }
         />
         <Flex className="items-center gap-2">
           {[...Array(pageCount)].map((_, i) => (
@@ -374,12 +481,12 @@ const ConstituencyList: React.FC = () => {
         <FaAngleRight
           cursor="pointer"
           size={20}
-          onClick={() => {
+          onClick={() =>
             setFilter({
               ...filter,
               pageNumber: Math.min(filter.pageNumber + 1, pageCount),
-            });
-          }}
+            })
+          }
         />
       </Flex>
 
@@ -390,13 +497,31 @@ const ConstituencyList: React.FC = () => {
         setToastMessage={setToastMessage}
       />
 
-      {/* Add Constituency Modal */}
+      {/* Dynamic Modal for Division/District/Constituency */}
       <AddConstituencyPartModal
         isOpen={isModalOpen}
         setIsOpen={setIsModalOpen}
-        title="Add Constituency"
-        fields={constituencyFields}
-        onSuccess={handleAddConstituency}
+        title={
+          modalType === "division"
+            ? "Add Division"
+            : modalType === "district"
+            ? "Add District"
+            : "Add Constituency"
+        }
+        fields={
+          modalType === "division"
+            ? divisionFields
+            : modalType === "district"
+            ? districtFields
+            : constituencyFields
+        }
+        onSuccess={
+          modalType === "division"
+            ? handleAddDivision
+            : modalType === "district"
+            ? handleAddDistrict
+            : handleAddConstituency
+        }
       />
 
       {/* Delete Modal */}

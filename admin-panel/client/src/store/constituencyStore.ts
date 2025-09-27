@@ -19,7 +19,7 @@ type TConstituencyStore = {
 
   setDivisionList: () => TToastMessage;
   setFilter: (filter: Partial<TFilter>) => void;
-  addDivision: (divisionName: string) => TToastMessage;
+  addDivision: (divisionName: string) => Promise<TToastMessage>;
   updateConstituency: (constituencyObject: TConstituencyModel) => TToastMessage;
 
   //   Computed parts
@@ -56,7 +56,7 @@ export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
       filter: { ...state.filter, ...filter },
     })),
 
-  addDivision: (divisionName) => {
+  addDivision: async (divisionName) => {
     const toastMessage: TToastMessage = {
       type: "",
       toastMessage: "",
