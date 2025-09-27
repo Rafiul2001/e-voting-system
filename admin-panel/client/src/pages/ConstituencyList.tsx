@@ -5,7 +5,7 @@ import { MdDelete } from "react-icons/md";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
 import Text from "../components/ui/Text";
 import { fontWeight } from "../components/utils/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import ToastModal from "../components/ToastModal";
 import { useNavigate } from "react-router";
 import { useConstituencyStore } from "../store/constituencyStore";
@@ -14,7 +14,6 @@ const ConstituencyList: React.FC = () => {
   const navigate = useNavigate();
 
   const divisionList = useConstituencyStore((s) => s.divisionList);
-  const setDivisionList = useConstituencyStore((s) => s.setDivisionList);
   const filter = useConstituencyStore((s) => s.filter);
   const setFilter = useConstituencyStore((s) => s.setFilter);
 
@@ -23,11 +22,6 @@ const ConstituencyList: React.FC = () => {
     type: string;
     toastMessage: string;
   }>();
-
-  // Update division list once on mount
-  useEffect(() => {
-    setDivisionList();
-  }, [setDivisionList]);
 
   // Handle filter changes
   const handleFilter = useCallback(
