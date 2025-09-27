@@ -2,6 +2,11 @@ import { create } from "zustand";
 import type { TConstituencyModel } from "../types/ConstituencyType";
 import { constituencyListSampleData } from "../testingData/constituencyDataSample";
 
+type TToastMessage = {
+  type: string;
+  toastMessage: string;
+};
+
 type TFilter = {
   divisionName: string;
   districtName: string;
@@ -11,19 +16,17 @@ type TFilter = {
 type TConstituencyStore = {
   divisionList: TConstituencyModel[];
   filter: TFilter;
-  message: string;
 
-  setDivisionList: () => void;
+  setDivisionList: () => TToastMessage;
   setFilter: (filter: Partial<TFilter>) => void;
-  addDivision: (divisionName: string) => void;
-  updateConstituency: (constituencyObject: TConstituencyModel) => void;
+  addDivision: (divisionName: string) => TToastMessage;
+  updateConstituency: (constituencyObject: TConstituencyModel) => TToastMessage;
 
   //   Computed parts
   getFilteredDivisionObject: () => TConstituencyModel | undefined;
 };
 
 export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
-  message: "",
   divisionList: [],
   filter: {
     divisionName: "",
@@ -31,7 +34,22 @@ export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
     pageNumber: 1,
   },
 
-  setDivisionList: () => set({ divisionList: constituencyListSampleData }),
+  setDivisionList: () => {
+    const toastMessage: TToastMessage = {
+      type: "",
+      toastMessage: "",
+    };
+
+    // TODO: Add the route of get API
+    set({
+      divisionList: constituencyListSampleData,
+    });
+
+    toastMessage.type = "success";
+    toastMessage.toastMessage = "Division added successfully";
+
+    return toastMessage;
+  },
 
   setFilter: (filter) =>
     set((state) => ({
@@ -39,31 +57,51 @@ export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
     })),
 
   addDivision: (divisionName) => {
+    const toastMessage: TToastMessage = {
+      type: "",
+      toastMessage: "",
+    };
+
     set((state) => {
       if (state.divisionList.some((d) => d.divisionName === divisionName)) {
-        state.message = "This division is already exists";
+        toastMessage.type = "ERROR 409";
+        toastMessage.toastMessage = "This division is already exists";
         return state; // no duplicate
       }
 
-      // TODO: Add the route of API
+      // TODO: Add the route of POST API
 
-      state.message = "Division added successfully";
+      toastMessage.type = "success";
+      toastMessage.toastMessage = "Division added successfully";
       return {
         divisionList: [...state.divisionList, { divisionName, districts: [] }],
       };
     });
+
+    return toastMessage;
   },
 
   updateConstituency: (constituencyObject) => {
+    const toastMessage: TToastMessage = {
+      type: "",
+      toastMessage: "",
+    };
+
     console.log(constituencyObject);
+
+    // Add the route of update API
+
     set((state) => ({
-      message: "Updated!",
       divisionList: state.divisionList.map((division) =>
         division.divisionName === constituencyObject.divisionName
           ? constituencyObject // create a new object
           : division
       ),
     }));
+
+    toastMessage.type = "success";
+    toastMessage.toastMessage = "Updated";
+    return toastMessage;
   },
 
   getFilteredDivisionObject: () => {

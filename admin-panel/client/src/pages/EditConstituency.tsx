@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from "react-router";
 import Container from "../components/ui/Container";
 import { useConstituencyStore } from "../store/constituencyStore";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Text from "../components/ui/Text";
 import Table from "../components/ui/Table";
 import ToastModal from "../components/ToastModal";
 import type { TConstituencyModel } from "../types/ConstituencyType";
+import DeleteModal from "../components/modals/DeleteModal";
 
 // Types
 type WardType = { wardNumber: number };
@@ -68,8 +69,27 @@ const EditConstituency: React.FC = () => {
     }
   }, [filteredDivisionObject, navigate]);
 
+  // Update handlers
+  const handleUpdate = useCallback(
+    async (constituencyObject: TConstituencyModel | undefined) => {
+      if (constituencyObject) {
+        const response = await useConstituencyStore
+          .getState()
+          .updateConstituency(constituencyObject);
+
+        setToastMessage(response);
+      } else {
+        setToastMessage({
+          type: "failed",
+          toastMessage: "Object is not found",
+        });
+      }
+    },
+    []
+  );
+
   // Delete handlers
-  const handleDeleteUpazila = (name: string) => {
+  const handleDeleteUpazila = async (name: string) => {
     if (!filteredConstituency) return;
 
     filteredConstituency.boundaries.upazilas =
@@ -77,30 +97,33 @@ const EditConstituency: React.FC = () => {
         (upazila) => upazila.upazilaName !== name
       ) || [];
 
+    await handleUpdate(constituencyObjectToBeUpdate);
     // Optionally update your store to trigger re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
-  const handleDeleteUnion = (name: string) => {
+  const handleDeleteUnion = async (name: string) => {
     if (!filteredUpazila) return;
 
     filteredUpazila.unions = filteredUpazila.unions.filter(
       (union) => union.unionName !== name
     );
 
+    await handleUpdate(constituencyObjectToBeUpdate);
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
   // Delete ward from Union
-  const handleDeleteUnionWard = (wardNumber: number) => {
+  const handleDeleteUnionWard = async (wardNumber: number) => {
     if (!filteredUnion) return;
     filteredUnion.wards = filteredUnion.wards.filter((w) => w !== wardNumber);
 
+    await handleUpdate(constituencyObjectToBeUpdate);
     // Trigger store update or re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
-  const handleDeleteCity = (name: string) => {
+  const handleDeleteCity = async (name: string) => {
     if (!filteredConstituency) return;
 
     filteredConstituency.boundaries.cityCorporations =
@@ -108,19 +131,24 @@ const EditConstituency: React.FC = () => {
         (city) => city.cityCorporationName !== name
       ) || [];
 
+    await handleUpdate(constituencyObjectToBeUpdate);
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
   // Delete ward from City Corporation
-  const handleDeleteCityWard = (wardNumber: number) => {
+  const handleDeleteCityWard = async (wardNumber: number) => {
     if (!filteredCityCorporation) return;
     filteredCityCorporation.wards = filteredCityCorporation.wards.filter(
       (w) => w !== wardNumber
     );
 
+    await handleUpdate(constituencyObjectToBeUpdate);
     // Trigger store update or re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
+
+  // Custom delete function for confirmation
+  const [deleteFunction, setDeleteFunction] = useState<() => Promise<void>>();
 
   return (
     <Container className="relative">
@@ -132,7 +160,7 @@ const EditConstituency: React.FC = () => {
       <Text size={4}>District Name: {filter.districtName}</Text>
 
       {/* Upazilas Table */}
-      {filteredConstituency?.boundaries.upazilas && (
+      {filteredConstituency && (
         <div className="mt-8">
           <div className="flex justify-between items-center mb-2">
             <Text size={3} className="font-semibold">
@@ -144,9 +172,13 @@ const EditConstituency: React.FC = () => {
           </div>
           <Table<UpazilaType>
             columns={[{ header: "Name", accessor: "upazilaName" }]}
-            data={filteredConstituency.boundaries.upazilas}
+            data={filteredConstituency.boundaries.upazilas || []}
             onEdit={(row) => setSelectedUpazilaName(row.upazilaName)}
-            onDelete={(row) => handleDeleteUpazila(row.upazilaName)}
+            onDelete={(row) =>
+              setDeleteFunction(
+                () => () => handleDeleteUpazila(row.upazilaName)
+              )
+            }
           />
         </div>
       )}
@@ -166,7 +198,9 @@ const EditConstituency: React.FC = () => {
             columns={[{ header: "Name", accessor: "unionName" }]}
             data={filteredUpazila.unions}
             onEdit={(row) => setSelectedUnionName(row.unionName)}
-            onDelete={(row) => handleDeleteUnion(row.unionName)}
+            onDelete={(row) =>
+              setDeleteFunction(() => () => handleDeleteUnion(row.unionName))
+            }
           />
         </div>
       )}
@@ -185,13 +219,17 @@ const EditConstituency: React.FC = () => {
           <Table<WardType>
             columns={[{ header: "Ward", accessor: "wardNumber" }]}
             data={filteredUnion.wards.map((w) => ({ wardNumber: w }))}
-            onDelete={(row) => handleDeleteUnionWard(row.wardNumber)}
+            onDelete={(row) =>
+              setDeleteFunction(
+                () => () => handleDeleteUnionWard(row.wardNumber)
+              )
+            }
           />
         </div>
       )}
 
       {/* City Corporations Table */}
-      {filteredConstituency?.boundaries.cityCorporations && (
+      {filteredConstituency && (
         <div className="mt-8">
           <div className="flex justify-between items-center mb-2">
             <Text size={3} className="font-semibold">
@@ -203,11 +241,15 @@ const EditConstituency: React.FC = () => {
           </div>
           <Table<CityCorporationType>
             columns={[{ header: "Name", accessor: "cityCorporationName" }]}
-            data={filteredConstituency.boundaries.cityCorporations}
+            data={filteredConstituency.boundaries.cityCorporations || []}
             onEdit={(row) =>
               setSelectedCityCorporationName(row.cityCorporationName)
             }
-            onDelete={(row) => handleDeleteCity(row.cityCorporationName)}
+            onDelete={(row) =>
+              setDeleteFunction(
+                () => () => handleDeleteCity(row.cityCorporationName)
+              )
+            }
           />
         </div>
       )}
@@ -226,30 +268,33 @@ const EditConstituency: React.FC = () => {
           <Table<WardType>
             columns={[{ header: "Ward", accessor: "wardNumber" }]}
             data={filteredCityCorporation.wards.map((w) => ({ wardNumber: w }))}
-            onDelete={(row) => handleDeleteCityWard(row.wardNumber)}
+            onDelete={(row) =>
+              setDeleteFunction(
+                () => () => handleDeleteCityWard(row.wardNumber)
+              )
+            }
           />
         </div>
       )}
-
-      <button
-        onClick={() => {
-          if (constituencyObjectToBeUpdate) {
-            useConstituencyStore
-              .getState()
-              .updateConstituency(constituencyObjectToBeUpdate);
-
-          }
-        }}
-        className="mt-4 bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-600"
-      >
-        Update
-      </button>
 
       {/* Toast Modal */}
       <ToastModal
         type={toastMessage?.type}
         toastMessage={toastMessage?.toastMessage}
         setToastMessage={setToastMessage}
+      />
+
+      {/* Delete Modal */}
+      <DeleteModal
+        isOpen={!!deleteFunction}
+        confirmMessage="Do you want to delete?"
+        onCancel={() => setDeleteFunction(undefined)}
+        onDelete={async () => {
+          if (deleteFunction) {
+            await deleteFunction();
+            setDeleteFunction(undefined);
+          }
+        }}
       />
     </Container>
   );
