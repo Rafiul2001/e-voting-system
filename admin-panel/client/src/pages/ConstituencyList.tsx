@@ -7,6 +7,7 @@ import Text from "../components/ui/Text";
 import { fontWeight } from "../components/utils/utils";
 import { useCallback, useRef, useState } from "react";
 import ToastModal from "../components/ToastModal";
+import DeleteModal from "../components/modals/DeleteModal";
 import { useNavigate } from "react-router";
 import { useConstituencyStore } from "../store/constituencyStore";
 import type { TFormField } from "../components/modals/constituency/AddConstituencyPartModal";
@@ -26,6 +27,9 @@ const ConstituencyList: React.FC = () => {
     toastMessage: string;
   }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Delete modal state
+  const [deleteFunction, setDeleteFunction] = useState<() => Promise<void>>();
 
   // Constituency form fields
   const constituencyFields: TFormField[] = [
@@ -84,7 +88,6 @@ const ConstituencyList: React.FC = () => {
       return;
     }
 
-    // Convert constituencyNumber to number
     const newConstituencyNumber = Number(data.constituencyNumber);
 
     const division = divisionList.find(
@@ -97,7 +100,7 @@ const ConstituencyList: React.FC = () => {
     );
     if (!district) return;
 
-    // ✅ Check if constituency already exists
+    // Check if constituency already exists
     const exists = district.constituencies.some(
       (c) => c.constituencyNumber === newConstituencyNumber
     );
@@ -131,6 +134,54 @@ const ConstituencyList: React.FC = () => {
 
     const toast = await updateConstituency(updatedDivision);
     setToastMessage(toast);
+  };
+
+  const handleDeleteConstituency = async (constituencyNumber: number) => {
+    const division = divisionList.find(
+      (d) => d.divisionName === filter.divisionName
+    );
+    if (!division) return;
+
+    const district = division.districts.find(
+      (dist) => dist.districtName === filter.districtName
+    );
+    if (!district) return;
+
+    const constituencyToDelete = district.constituencies.find(
+      (c) => c.constituencyNumber === constituencyNumber
+    );
+    if (!constituencyToDelete) return;
+
+    // ✅ Check if constituency has boundaries
+    if (
+      (constituencyToDelete.boundaries.upazilas?.length || 0) > 0 ||
+      (constituencyToDelete.boundaries.cityCorporations?.length || 0) > 0
+    ) {
+      setToastMessage({
+        type: "error",
+        toastMessage:
+          "Cannot delete constituency with existing upazilas or city corporations.",
+      });
+      return;
+    }
+
+    const updatedDistrict = {
+      ...district,
+      constituencies: district.constituencies.filter(
+        (c) => c.constituencyNumber !== constituencyNumber
+      ),
+    };
+
+    const updatedDivision: TConstituencyModel = {
+      ...division,
+      districts: division.districts.map((dist) =>
+        dist.districtName === district.districtName ? updatedDistrict : dist
+      ),
+    };
+
+    const toast = await updateConstituency(updatedDivision);
+    setToastMessage(toast);
+    setFilter({ ...filter });
   };
 
   return (
@@ -261,7 +312,17 @@ const ConstituencyList: React.FC = () => {
                       >
                         <CiEdit size={24} />
                       </div>
-                      <div className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl">
+                      <div
+                        className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
+                        onClick={() =>
+                          setDeleteFunction(
+                            () => () =>
+                              handleDeleteConstituency(
+                                constituency.constituencyNumber
+                              )
+                          )
+                        }
+                      >
                         <MdDelete size={24} />
                       </div>
                     </Flex>
@@ -336,6 +397,19 @@ const ConstituencyList: React.FC = () => {
         title="Add Constituency"
         fields={constituencyFields}
         onSuccess={handleAddConstituency}
+      />
+
+      {/* Delete Modal */}
+      <DeleteModal
+        isOpen={!!deleteFunction}
+        confirmMessage="Do you want to delete this constituency?"
+        onCancel={() => setDeleteFunction(undefined)}
+        onDelete={async () => {
+          if (deleteFunction) {
+            await deleteFunction();
+            setDeleteFunction(undefined);
+          }
+        }}
       />
     </Container>
   );
