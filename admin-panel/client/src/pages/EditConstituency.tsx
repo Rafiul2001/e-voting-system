@@ -7,12 +7,62 @@ import Table from "../components/ui/Table";
 import ToastModal from "../components/ToastModal";
 import type { TConstituencyModel } from "../types/ConstituencyType";
 import DeleteModal from "../components/modals/DeleteModal";
+import AddConstituencyPartModal from "../components/modals/constituency/AddConstituencyPartModal";
 
 // Types
 type WardType = { wardNumber: number };
 type UnionType = { unionName: string; wards: number[] };
 type UpazilaType = { upazilaName: string; unions: UnionType[] };
 type CityCorporationType = { cityCorporationName: string; wards: number[] };
+
+// Form configs
+const formFieldsConfig: Record<
+  string,
+  {
+    title: string;
+    fields: { name: string; label: string; type: string; required?: boolean }[];
+  }
+> = {
+  upazila: {
+    title: "Add Upazila",
+    fields: [
+      {
+        name: "upazilaName",
+        label: "Upazila Name",
+        type: "text",
+        required: true,
+      },
+    ],
+  },
+  union: {
+    title: "Add Union",
+    fields: [
+      { name: "unionName", label: "Union Name", type: "text", required: true },
+    ],
+  },
+  ward: {
+    title: "Add Ward",
+    fields: [
+      {
+        name: "wardNumber",
+        label: "Ward Number",
+        type: "number",
+        required: true,
+      },
+    ],
+  },
+  cityCorporation: {
+    title: "Add City Corporation",
+    fields: [
+      {
+        name: "cityCorporationName",
+        label: "City Corporation Name",
+        type: "text",
+        required: true,
+      },
+    ],
+  },
+};
 
 const EditConstituency: React.FC = () => {
   const navigate = useNavigate();
@@ -61,6 +111,11 @@ const EditConstituency: React.FC = () => {
     toastMessage: string;
   }>();
 
+  // Add Modal state
+  const [addModalType, setAddModalType] = useState<
+    keyof typeof formFieldsConfig | null
+  >(null);
+
   useEffect(() => {
     if (!filteredDivisionObject) {
       navigate("/constituency-records");
@@ -91,63 +146,50 @@ const EditConstituency: React.FC = () => {
   // Delete handlers
   const handleDeleteUpazila = async (name: string) => {
     if (!filteredConstituency) return;
-
     filteredConstituency.boundaries.upazilas =
       filteredConstituency.boundaries.upazilas?.filter(
         (upazila) => upazila.upazilaName !== name
       ) || [];
-
     await handleUpdate(constituencyObjectToBeUpdate);
-    // Optionally update your store to trigger re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
   const handleDeleteUnion = async (name: string) => {
     if (!filteredUpazila) return;
-
     filteredUpazila.unions = filteredUpazila.unions.filter(
       (union) => union.unionName !== name
     );
-
     await handleUpdate(constituencyObjectToBeUpdate);
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
-  // Delete ward from Union
   const handleDeleteUnionWard = async (wardNumber: number) => {
     if (!filteredUnion) return;
     filteredUnion.wards = filteredUnion.wards.filter((w) => w !== wardNumber);
-
     await handleUpdate(constituencyObjectToBeUpdate);
-    // Trigger store update or re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
   const handleDeleteCity = async (name: string) => {
     if (!filteredConstituency) return;
-
     filteredConstituency.boundaries.cityCorporations =
       filteredConstituency.boundaries.cityCorporations?.filter(
         (city) => city.cityCorporationName !== name
       ) || [];
-
     await handleUpdate(constituencyObjectToBeUpdate);
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
-  // Delete ward from City Corporation
   const handleDeleteCityWard = async (wardNumber: number) => {
     if (!filteredCityCorporation) return;
     filteredCityCorporation.wards = filteredCityCorporation.wards.filter(
       (w) => w !== wardNumber
     );
-
     await handleUpdate(constituencyObjectToBeUpdate);
-    // Trigger store update or re-render
     useConstituencyStore.getState().setFilter({ ...filter });
   };
 
-  // Custom delete function for confirmation
+  // Delete modal state
   const [deleteFunction, setDeleteFunction] = useState<() => Promise<void>>();
 
   return (
@@ -166,7 +208,10 @@ const EditConstituency: React.FC = () => {
             <Text size={3} className="font-semibold">
               Upazilas
             </Text>
-            <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+            <button
+              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              onClick={() => setAddModalType("upazila")}
+            >
               Add Upazila
             </button>
           </div>
@@ -190,7 +235,10 @@ const EditConstituency: React.FC = () => {
             <Text size={3} className="font-semibold">
               Unions of {filteredUpazila.upazilaName}
             </Text>
-            <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+            <button
+              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+              onClick={() => setAddModalType("union")}
+            >
               Add Union
             </button>
           </div>
@@ -212,7 +260,10 @@ const EditConstituency: React.FC = () => {
             <Text size={3} className="font-semibold">
               Wards of {filteredUnion.unionName}
             </Text>
-            <button className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600">
+            <button
+              className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600"
+              onClick={() => setAddModalType("ward")}
+            >
               Add Ward
             </button>
           </div>
@@ -235,7 +286,10 @@ const EditConstituency: React.FC = () => {
             <Text size={3} className="font-semibold">
               City Corporations
             </Text>
-            <button className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">
+            <button
+              className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+              onClick={() => setAddModalType("cityCorporation")}
+            >
               Add City Corporation
             </button>
           </div>
@@ -261,7 +315,10 @@ const EditConstituency: React.FC = () => {
             <Text size={3} className="font-semibold">
               Wards of {filteredCityCorporation.cityCorporationName}
             </Text>
-            <button className="bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-600">
+            <button
+              className="bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-600"
+              onClick={() => setAddModalType("ward")}
+            >
               Add Ward
             </button>
           </div>
@@ -294,6 +351,49 @@ const EditConstituency: React.FC = () => {
             await deleteFunction();
             setDeleteFunction(undefined);
           }
+        }}
+      />
+
+      {/* Add Item Modal */}
+      <AddConstituencyPartModal
+        isOpen={!!addModalType}
+        setIsOpen={() => setAddModalType(null)}
+        title={addModalType ? formFieldsConfig[addModalType].title : ""}
+        fields={addModalType ? formFieldsConfig[addModalType].fields : []}
+        onSuccess={async (data) => {
+          if (addModalType === "upazila" && filteredConstituency) {
+            filteredConstituency.boundaries.upazilas =
+              filteredConstituency.boundaries.upazilas || [];
+            filteredConstituency.boundaries.upazilas.push({
+              upazilaName: data.upazilaName,
+              unions: [],
+            });
+          } else if (addModalType === "union" && filteredUpazila) {
+            filteredUpazila.unions.push({
+              unionName: data.unionName,
+              wards: [],
+            });
+          } else if (addModalType === "ward") {
+            if (filteredUnion) {
+              filteredUnion.wards.push(Number(data.wardNumber));
+            } else if (filteredCityCorporation) {
+              filteredCityCorporation.wards.push(Number(data.wardNumber));
+            }
+          } else if (
+            addModalType === "cityCorporation" &&
+            filteredConstituency
+          ) {
+            filteredConstituency.boundaries.cityCorporations =
+              filteredConstituency.boundaries.cityCorporations || [];
+            filteredConstituency.boundaries.cityCorporations.push({
+              cityCorporationName: data.cityCorporationName,
+              wards: [],
+            });
+          }
+
+          await handleUpdate(constituencyObjectToBeUpdate);
+          useConstituencyStore.getState().setFilter({ ...filter });
+          setAddModalType(null);
         }}
       />
     </Container>
