@@ -3,7 +3,7 @@ import Flex from "../../ui/Flex";
 import Text from "../../ui/Text";
 import { useCallback, useEffect, useState } from "react";
 
-type TFormField = {
+export type TFormField = {
   name: string;
   label: string;
   type: string;

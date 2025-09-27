@@ -361,36 +361,103 @@ const EditConstituency: React.FC = () => {
         title={addModalType ? formFieldsConfig[addModalType].title : ""}
         fields={addModalType ? formFieldsConfig[addModalType].fields : []}
         onSuccess={async (data) => {
+          if (!constituencyObjectToBeUpdate) return;
+
+          // Upazila
           if (addModalType === "upazila" && filteredConstituency) {
             filteredConstituency.boundaries.upazilas =
               filteredConstituency.boundaries.upazilas || [];
+
+            const exists = filteredConstituency.boundaries.upazilas.some(
+              (upazila) =>
+                upazila.upazilaName.toLowerCase() ===
+                data.upazilaName.toLowerCase()
+            );
+            if (exists) {
+              setToastMessage({
+                type: "error",
+                toastMessage: `Upazila "${data.upazilaName}" already exists!`,
+              });
+              return;
+            }
+
             filteredConstituency.boundaries.upazilas.push({
               upazilaName: data.upazilaName,
               unions: [],
             });
+
+            // Union
           } else if (addModalType === "union" && filteredUpazila) {
+            const exists = filteredUpazila.unions.some(
+              (union) =>
+                union.unionName.toLowerCase() === data.unionName.toLowerCase()
+            );
+            if (exists) {
+              setToastMessage({
+                type: "error",
+                toastMessage: `Union "${data.unionName}" already exists!`,
+              });
+              return;
+            }
+
             filteredUpazila.unions.push({
               unionName: data.unionName,
               wards: [],
             });
+
+            // Ward
           } else if (addModalType === "ward") {
+            const wardNumber = Number(data.wardNumber);
+
             if (filteredUnion) {
-              filteredUnion.wards.push(Number(data.wardNumber));
+              if (filteredUnion.wards.includes(wardNumber)) {
+                setToastMessage({
+                  type: "error",
+                  toastMessage: `Ward "${wardNumber}" already exists!`,
+                });
+                return;
+              }
+              filteredUnion.wards.push(wardNumber);
             } else if (filteredCityCorporation) {
-              filteredCityCorporation.wards.push(Number(data.wardNumber));
+              if (filteredCityCorporation.wards.includes(wardNumber)) {
+                setToastMessage({
+                  type: "error",
+                  toastMessage: `Ward "${wardNumber}" already exists!`,
+                });
+                return;
+              }
+              filteredCityCorporation.wards.push(wardNumber);
             }
+
+            // City Corporation
           } else if (
             addModalType === "cityCorporation" &&
             filteredConstituency
           ) {
             filteredConstituency.boundaries.cityCorporations =
               filteredConstituency.boundaries.cityCorporations || [];
+
+            const exists =
+              filteredConstituency.boundaries.cityCorporations.some(
+                (city) =>
+                  city.cityCorporationName.toLowerCase() ===
+                  data.cityCorporationName.toLowerCase()
+              );
+            if (exists) {
+              setToastMessage({
+                type: "error",
+                toastMessage: `City Corporation "${data.cityCorporationName}" already exists!`,
+              });
+              return;
+            }
+
             filteredConstituency.boundaries.cityCorporations.push({
               cityCorporationName: data.cityCorporationName,
               wards: [],
             });
           }
 
+          // Update store and reset modal
           await handleUpdate(constituencyObjectToBeUpdate);
           useConstituencyStore.getState().setFilter({ ...filter });
           setAddModalType(null);

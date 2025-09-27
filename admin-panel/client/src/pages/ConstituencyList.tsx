@@ -9,19 +9,41 @@ import { useCallback, useRef, useState } from "react";
 import ToastModal from "../components/ToastModal";
 import { useNavigate } from "react-router";
 import { useConstituencyStore } from "../store/constituencyStore";
+import type { TFormField } from "../components/modals/constituency/AddConstituencyPartModal";
+import AddConstituencyPartModal from "../components/modals/constituency/AddConstituencyPartModal";
+import type { TConstituencyModel } from "../types/ConstituencyType";
 
 const ConstituencyList: React.FC = () => {
   const navigate = useNavigate();
-
   const divisionList = useConstituencyStore((s) => s.divisionList);
   const filter = useConstituencyStore((s) => s.filter);
   const setFilter = useConstituencyStore((s) => s.setFilter);
+  const updateConstituency = useConstituencyStore((s) => s.updateConstituency);
 
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
   const [toastMessage, setToastMessage] = useState<{
     type: string;
     toastMessage: string;
   }>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Constituency form fields
+  const constituencyFields: TFormField[] = [
+    {
+      name: "constituencyNumber",
+      label: "Constituency Number",
+      type: "number",
+      placeholder: "Enter constituency number",
+      required: true,
+    },
+    {
+      name: "constituencyName",
+      label: "Constituency Name",
+      type: "text",
+      placeholder: "Enter constituency name",
+      required: true,
+    },
+  ];
 
   // Handle filter changes
   const handleFilter = useCallback(
@@ -29,7 +51,7 @@ const ConstituencyList: React.FC = () => {
       setFilter({
         ...filter,
         [e.target.name]: e.target.value,
-        pageNumber: 1, // reset page when filter changes
+        pageNumber: 1,
       });
     },
     [filter, setFilter]
@@ -39,7 +61,6 @@ const ConstituencyList: React.FC = () => {
     s.getFilteredDivisionObject()
   );
 
-  // Compute filtered lists inside component (no infinite loop)
   const filteredDistrictList = filteredDivisionObject?.districts || [];
 
   const filteredConstituencyList =
@@ -53,6 +74,64 @@ const ConstituencyList: React.FC = () => {
   const totalData: number = tableData.length;
   const rowCount: number = 10;
   const pageCount: number = Math.ceil(totalData / rowCount);
+
+  const handleAddConstituency = async (data: Record<string, string>) => {
+    if (!filter.divisionName || !filter.districtName) {
+      setToastMessage({
+        type: "error",
+        toastMessage: "Please select division and district first.",
+      });
+      return;
+    }
+
+    // Convert constituencyNumber to number
+    const newConstituencyNumber = Number(data.constituencyNumber);
+
+    const division = divisionList.find(
+      (d) => d.divisionName === filter.divisionName
+    );
+    if (!division) return;
+
+    const district = division.districts.find(
+      (dist) => dist.districtName === filter.districtName
+    );
+    if (!district) return;
+
+    // ✅ Check if constituency already exists
+    const exists = district.constituencies.some(
+      (c) => c.constituencyNumber === newConstituencyNumber
+    );
+
+    if (exists) {
+      setToastMessage({
+        type: "error",
+        toastMessage: `Constituency number ${newConstituencyNumber} already exists!`,
+      });
+      return;
+    }
+
+    const updatedDistrict = {
+      ...district,
+      constituencies: [
+        ...district.constituencies,
+        {
+          constituencyNumber: newConstituencyNumber,
+          constituencyName: data.constituencyName,
+          boundaries: { upazilas: [], cityCorporations: [] },
+        },
+      ],
+    };
+
+    const updatedDivision: TConstituencyModel = {
+      ...division,
+      districts: division.districts.map((dist) =>
+        dist.districtName === district.districtName ? updatedDistrict : dist
+      ),
+    };
+
+    const toast = await updateConstituency(updatedDivision);
+    setToastMessage(toast);
+  };
 
   return (
     <Container className="relative overflow-hidden">
@@ -119,7 +198,10 @@ const ConstituencyList: React.FC = () => {
         </Flex>
 
         <div className="shrink">
-          <button className="bg-teal-500 hover:bg-teal-700 cursor-pointer text-white px-10 py-2 rounded-md font-semibold text-xl">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-teal-500 hover:bg-teal-700 cursor-pointer text-white px-10 py-2 rounded-md font-semibold text-xl"
+          >
             Add a constituency
           </button>
         </div>
@@ -245,6 +327,15 @@ const ConstituencyList: React.FC = () => {
         type={toastMessage?.type}
         toastMessage={toastMessage?.toastMessage}
         setToastMessage={setToastMessage}
+      />
+
+      {/* Add Constituency Modal */}
+      <AddConstituencyPartModal
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        title="Add Constituency"
+        fields={constituencyFields}
+        onSuccess={handleAddConstituency}
       />
     </Container>
   );
