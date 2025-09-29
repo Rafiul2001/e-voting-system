@@ -55,6 +55,7 @@ const EditVoterModal: React.FC<TEditVoterModal> = ({
           : undefined, // or keep it empty if not yet initialized
       }));
     }
+
     if (
       nameParts.includes("constituency") &&
       nameParts.includes("districtName")
@@ -66,6 +67,7 @@ const EditVoterModal: React.FC<TEditVoterModal> = ({
           : undefined, // or keep it empty if not yet initialized
       }));
     }
+
     if (
       nameParts.includes("constituency") &&
       nameParts.includes("constituencyNumber")
@@ -195,6 +197,21 @@ const EditVoterModal: React.FC<TEditVoterModal> = ({
           : undefined,
       }));
     }
+
+    if (
+      nameParts.includes("constituency") &&
+      nameParts.includes("homeAddress")
+    ) {
+      setFormData((state) => ({
+        ...state,
+        constituency: state.constituency
+          ? {
+              ...state.constituency,
+              homeAddress: value,
+            }
+          : undefined,
+      }));
+    }
   };
 
   // Dependent dropdowns
@@ -242,7 +259,7 @@ const EditVoterModal: React.FC<TEditVoterModal> = ({
 
       {/* Modal */}
       <div
-        className={`fixed z-50 top-1/2 left-1/2 w-full max-w-[600px] p-4 bg-gray-50 rounded-2xl shadow transition-all duration-300 transform ${
+        className={`fixed z-50 top-1/2 left-1/2 w-full max-h-full overflow-auto max-w-[600px] p-4 bg-gray-50 rounded-2xl shadow transition-all duration-300 transform ${
           isOpen
             ? "opacity-100 scale-100 -translate-x-1/2 -translate-y-1/2"
             : "opacity-0 scale-95 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -552,6 +569,41 @@ const EditVoterModal: React.FC<TEditVoterModal> = ({
                 </Flex>
               </>
             )}
+
+          {/* Voter Home Address */}
+          <Flex className="flex-col gap-2">
+            <label htmlFor="dateOfBirth">
+              <Text size={5} className="font-semibold">
+                Date of Birth
+              </Text>
+            </label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              id="dateOfBirth"
+              value={formData.dateOfBirth ?? ""}
+              onChange={onChangeFormData}
+              className="border-[2px] border-indigo-300 focus:outline-indigo-500 px-2 py-1 rounded-md font-medium"
+            />
+          </Flex>
+
+          {/* Voter Home Address */}
+          <Flex className="flex-col gap-2">
+            <label htmlFor="homeAddress">
+              <Text size={5} className="font-semibold">
+                Home Address
+              </Text>
+            </label>
+            <input
+              type="text"
+              name="constituency.homeAddress"
+              id="constituency.homeAddress"
+              value={formData.constituency?.homeAddress ?? ""}
+              placeholder="Enter Home Address"
+              onChange={onChangeFormData}
+              className="border-[2px] border-indigo-300 focus:outline-indigo-500 px-2 py-1 rounded-md font-medium"
+            />
+          </Flex>
 
           {/* Buttons */}
           <Flex className="gap-2 justify-end">
