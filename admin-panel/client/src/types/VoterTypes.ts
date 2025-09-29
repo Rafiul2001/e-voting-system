@@ -1,4 +1,4 @@
-type TVoterBase = {
+export type TVoterBase = {
   divisionName: string;
   districtName: string;
   constituencyNumber: number;
@@ -6,7 +6,7 @@ type TVoterBase = {
   homeAddress: string;
 };
 
-type TVoterConstituency =
+export type TVoterConstituency =
   | (TVoterBase & {
       upazila: {
         upazilaName: string;
