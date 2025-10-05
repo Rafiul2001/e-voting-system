@@ -10,8 +10,9 @@ import type { TVoter } from "../types/VoterTypes";
 import ToastModal from "../components/ToastModal";
 import EditVoterModal from "../components/modals/voter/EditVoterModal";
 import DeleteModal from "../components/modals/DeleteModal";
-import AddVoterModal from "../components/modals/voter/AddVoterModal";
+// import AddVoterModal from "../components/modals/voter/AddVoterModal";
 import { voterListData } from "../testingData/voterListDataSample";
+import AddVoterModal from "../components/modals/voter/AddVoterModal";
 
 type TFilter = {
   searchText: string;
