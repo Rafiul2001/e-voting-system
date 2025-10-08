@@ -22,6 +22,23 @@ type TVoterFormData = {
   homeAddress: string;
 };
 
+const DEFAULT_VALUE = {
+  voterId: "",
+  voterName: "",
+  dateOfBirth: "",
+  divisionName: "",
+  districtName: "",
+  constituencyNumber: 0,
+  constituencyName: "",
+  constituencyType: "",
+  upazilaName: "",
+  unionName: "",
+  unionWardNumber: 0,
+  cityCorporationName: "",
+  cityCorporationWardNumber: 0,
+  homeAddress: "",
+};
+
 type TAddVoterModal = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -33,7 +50,7 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
   setIsOpen,
   onSuccess,
 }) => {
-  const [formData, setFormData] = useState<Partial<TVoterFormData>>({});
+  const [formData, setFormData] = useState<TVoterFormData>(DEFAULT_VALUE);
   const [inputError, setInputError] = useState<Record<string, boolean>>({});
   const { divisionList } = useConstituencyStore();
 
@@ -42,7 +59,8 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
   ) => {
     const { name, value } = e.target;
 
-    setFormData((state) => ({ ...state, [name]: value ?? undefined }));
+    setFormData((state) => ({ ...state, [name]: value }));
+    setInputError((error) => ({ ...error, [name]: false }));
   };
 
   const selectedDivision = divisionList.find(
@@ -57,7 +75,7 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
   );
 
   const handleCancel = () => {
-    setFormData({});
+    setFormData(DEFAULT_VALUE);
     setIsOpen(false);
   };
 
@@ -76,19 +94,58 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
         }
       }
     });
-    console.log(errors);
 
-    if (Object.keys(errors).length > 0) {
+    if (Object.entries(errors).length > 0) {
       setInputError(errors);
     } else {
-      onSuccess(formData);
+      const constituencyName = selectedConstituency?.constituencyName ?? "";
+      let newVoter: Partial<TVoter>;
+
+      if (formData.constituencyType === "upazila") {
+        newVoter = {
+          voterId: formData.voterId,
+          voterName: formData.voterName,
+          dateOfBirth: formData.dateOfBirth,
+          constituency: {
+            constituencyNumber: Number(formData.constituencyNumber),
+            constituencyName: constituencyName,
+            districtName: formData.districtName,
+            divisionName: formData.divisionName,
+            homeAddress: formData.homeAddress,
+            upazila: {
+              upazilaName: formData.upazilaName,
+              unionName: formData.unionName,
+              wardNumber: Number(formData.unionWardNumber),
+            },
+          },
+        };
+      } else {
+        newVoter = {
+          voterId: formData.voterId,
+          voterName: formData.voterName,
+          dateOfBirth: formData.dateOfBirth,
+          constituency: {
+            constituencyNumber: Number(formData.constituencyNumber),
+            constituencyName: constituencyName,
+            districtName: formData.districtName,
+            divisionName: formData.divisionName,
+            homeAddress: formData.homeAddress,
+            cityCorporation: {
+              cityCorporationName: formData.cityCorporationName,
+              wardNumber: Number(formData.cityCorporationWardNumber),
+            },
+          },
+        };
+      }
+      onSuccess(newVoter);
+      setInputError({});
       setIsOpen(false);
     }
   };
 
   useEffect(() => {
     if (!isOpen) {
-      setFormData({});
+      setFormData(DEFAULT_VALUE);
       setInputError({});
     }
   }, [isOpen]);
@@ -263,7 +320,7 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
           )}
 
           {/* Upazila Fields */}
-          {formData.constituencyType &&
+          {formData.constituencyType === "upazila" &&
             selectedConstituency?.boundaries.upazilas &&
             selectedConstituency.boundaries.upazilas.length > 0 && (
               <>
@@ -347,7 +404,7 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
             )}
 
           {/* City Corporation Fields */}
-          {formData.constituencyType &&
+          {formData.constituencyType === "cityCorporation" &&
             selectedConstituency?.boundaries.cityCorporations &&
             selectedConstituency.boundaries.cityCorporations.length > 0 && (
               <>
@@ -381,7 +438,7 @@ const AddVoterModal: React.FC<TAddVoterModal> = ({
                   <Flex className="flex-col gap-2">
                     <label>City Corporation Ward Number</label>
                     <select
-                      name="cityCorporation.wardNumber"
+                      name="cityCorporationWardNumber"
                       value={formData.cityCorporationWardNumber}
                       onChange={onChangeFormData}
                       className={`border-[2px] ${

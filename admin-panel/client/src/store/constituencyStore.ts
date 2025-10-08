@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import type { TConstituencyModel } from "../types/ConstituencyType";
-import { constituencyListSampleData } from "../testingData/constituencyDataSample";
+import axios, { AxiosError } from "axios";
+import { useAuthStore } from "./authStore";
+
+const API_BASE_URL = "http://localhost:3000/api/v1/constituency";
 
 type TToastMessage = {
   type: string;
@@ -17,99 +20,160 @@ type TConstituencyStore = {
   divisionList: TConstituencyModel[];
   filter: TFilter;
 
-  setDivisionList: () => TToastMessage;
-  setFilter: (filter: Partial<TFilter>) => void;
+  setDivisionList: () => Promise<TToastMessage>;
   addDivision: (divisionName: string) => Promise<TToastMessage>;
-  updateConstituency: (constituencyObject: TConstituencyModel) => TToastMessage;
+  updateConstituency: (
+    constituencyObject: TConstituencyModel
+  ) => Promise<TToastMessage>;
+  deleteConstituency: (constituencyObjectId: string) => Promise<TToastMessage>;
 
-  //   Computed parts
+  setFilter: (filter: Partial<TFilter>) => void;
   getFilteredDivisionObject: () => TConstituencyModel | undefined;
 };
 
-export const useConstituencyStore = create<TConstituencyStore>((set, get) => ({
-  divisionList: [],
-  filter: {
-    divisionName: "",
-    districtName: "",
-    pageNumber: 1,
-  },
+export const useConstituencyStore = create<TConstituencyStore>((set, get) => {
+  const { token, logout } = useAuthStore.getState();
 
-  setDivisionList: () => {
-    const toastMessage: TToastMessage = {
-      type: "",
-      toastMessage: "",
-    };
+  // Axios instance with Authorization header
+  const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  });
 
-    // TODO: Add the route of get API
-    set({
-      divisionList: constituencyListSampleData,
-    });
+  // Interceptor to auto logout on 401
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        logout(true); // auto logout on session expiry
+      }
+      return Promise.reject(error);
+    }
+  );
 
-    toastMessage.type = "success";
-    toastMessage.toastMessage = "Division added successfully";
+  return {
+    divisionList: [],
+    filter: {
+      divisionName: "",
+      districtName: "",
+      pageNumber: 1,
+    },
 
-    return toastMessage;
-  },
+    setDivisionList: async () => {
+      const toastMessage: TToastMessage = { type: "", toastMessage: "" };
 
-  setFilter: (filter) =>
-    set((state) => ({
-      filter: { ...state.filter, ...filter },
-    })),
-
-  addDivision: async (divisionName) => {
-    const toastMessage: TToastMessage = {
-      type: "",
-      toastMessage: "",
-    };
-
-    set((state) => {
-      if (state.divisionList.some((d) => d.divisionName === divisionName)) {
-        toastMessage.type = "ERROR 409";
-        toastMessage.toastMessage = "This division is already exists";
-        return state; // no duplicate
+      try {
+        const response = await axiosInstance.get("/get-all");
+        set({ divisionList: response.data.constituencyList });
+        toastMessage.type = "success";
+        toastMessage.toastMessage = "Division list loaded successfully";
+      } catch (error) {
+        const err = error as AxiosError<{ message?: string }>;
+        console.error("Error fetching divisions:", err);
+        toastMessage.type = "error";
+        toastMessage.toastMessage =
+          err.response?.data?.message || "Failed to fetch division list";
       }
 
-      // TODO: Add the route of POST API
+      return toastMessage;
+    },
 
-      toastMessage.type = "success";
-      toastMessage.toastMessage = "Division added successfully";
-      return {
-        divisionList: [...state.divisionList, { divisionName, districts: [] }],
-      };
-    });
+    addDivision: async (divisionName) => {
+      const toastMessage: TToastMessage = { type: "", toastMessage: "" };
+      try {
+        const state = get();
+        if (state.divisionList.some((d) => d.divisionName === divisionName)) {
+          toastMessage.type = "error";
+          toastMessage.toastMessage = "This division already exists";
+          return toastMessage;
+        }
 
-    return toastMessage;
-  },
+        const response = await axiosInstance.post("/create", { divisionName });
+        set((state) => ({
+          divisionList: [...state.divisionList, response.data.constituency],
+        }));
 
-  updateConstituency: (constituencyObject) => {
-    const toastMessage: TToastMessage = {
-      type: "",
-      toastMessage: "",
-    };
+        toastMessage.type = "success";
+        toastMessage.toastMessage = "Division added successfully";
+      } catch (error) {
+        const err = error as AxiosError<{ message?: string }>;
+        console.error("Error adding division:", err);
+        toastMessage.type = "error";
+        toastMessage.toastMessage =
+          err.response?.data?.message || "Failed to add division";
+      }
 
-    console.log(constituencyObject);
+      return toastMessage;
+    },
 
-    // Add the route of update API
+    updateConstituency: async (constituencyObject) => {
+      const toastMessage: TToastMessage = { type: "", toastMessage: "" };
+      try {
+        const response = await axiosInstance.put(
+          `/add/${constituencyObject._id}`,
+          constituencyObject
+        );
+        const updated = response.data.constituency;
 
-    set((state) => ({
-      divisionList: state.divisionList.map((division) =>
-        division.divisionName === constituencyObject.divisionName
-          ? constituencyObject // create a new object
-          : division
-      ),
-    }));
+        set((state) => ({
+          divisionList: state.divisionList.map((division) =>
+            division._id === updated._id ? updated : division
+          ),
+        }));
 
-    toastMessage.type = "success";
-    toastMessage.toastMessage = "Updated";
-    return toastMessage;
-  },
+        toastMessage.type = "success";
+        toastMessage.toastMessage = "Constituency updated successfully";
+      } catch (error) {
+        const err = error as AxiosError<{ message?: string }>;
+        console.error("Error updating constituency:", err);
+        toastMessage.type = "error";
+        toastMessage.toastMessage =
+          err.response?.data?.message || "Failed to update constituency";
+      }
 
-  getFilteredDivisionObject: () => {
-    const { divisionList, filter } = get();
-    return divisionList.find(
-      (division) =>
-        division.divisionName.toLowerCase() ===
-        filter.divisionName.toLowerCase()
-    );
-  },
-}));
+      return toastMessage;
+    },
+
+    deleteConstituency: async (constituencyObjectId) => {
+      const toastMessage: TToastMessage = { type: "", toastMessage: "" };
+      try {
+        const response = await axiosInstance.delete(
+          `/delete/${constituencyObjectId}`
+        );
+        const deleted = response.data.constituency;
+
+        set((state) => ({
+          divisionList: state.divisionList.filter(
+            (division) => division._id !== deleted._id
+          ),
+        }));
+
+        toastMessage.type = "success";
+        toastMessage.toastMessage = "Constituency deleted successfully";
+      } catch (error) {
+        const err = error as AxiosError<{ message?: string }>;
+        console.error("Error deleting constituency:", err);
+        toastMessage.type = "error";
+        toastMessage.toastMessage =
+          err.response?.data?.message || "Failed to delete constituency";
+      }
+
+      return toastMessage;
+    },
+
+    setFilter: (filter) =>
+      set((state) => ({ filter: { ...state.filter, ...filter } })),
+
+    getFilteredDivisionObject: () => {
+      const { divisionList, filter } = get();
+      return divisionList.find(
+        (division) =>
+          division.divisionName.toLowerCase() ===
+          filter.divisionName.toLowerCase()
+      );
+    },
+  };
+});
