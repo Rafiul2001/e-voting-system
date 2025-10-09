@@ -42,120 +42,122 @@ type TVoterStore = {
   deleteVoter: (voterObjectId: string) => Promise<void>;
 };
 
-export const useVoterStore = create<TVoterStore>((set, get) => {
+// ✅ Helper: always get axios instance with latest token
+const getAxiosInstance = () => {
   const { token, logout } = useAuthStore.getState();
 
-  // Create an axios instance with auth header
-  const axiosInstance = axios.create({
+  const instance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
       "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
+      ...(token && { Authorization: `Bearer ${token}` }),
     },
   });
 
-  // Interceptor to auto logout if 401 received
-  axiosInstance.interceptors.response.use(
+  // Auto logout on 401 (expired or invalid token)
+  instance.interceptors.response.use(
     (response) => response,
     (error) => {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        logout(true); // auto logout
+        logout(true);
       }
       return Promise.reject(error);
     }
   );
 
-  return {
-    voterList: [],
-    filter: null,
-    toastMessage: { type: "", toastMessage: "" },
+  return instance;
+};
 
-    setFilter: (newFilter) => {
-      set((state) => ({
-        filter: { ...(state.filter ?? {}), ...newFilter },
-      }));
-    },
+export const useVoterStore = create<TVoterStore>((set, get) => ({
+  voterList: [],
+  filter: null,
+  toastMessage: { type: "", toastMessage: "" },
 
-    clearFilter: () => set({ filter: null }),
+  setFilter: (newFilter) => {
+    set((state) => ({
+      filter: { ...(state.filter ?? {}), ...newFilter },
+    }));
+  },
 
-    setVoterList: async (filterOverride) => {
-      const filter = filterOverride ?? get().filter;
-      try {
-        const response = await axiosInstance.post("/get-all", filter ?? {});
-        const { message, voterList } = response.data;
-        set({
-          voterList,
-          toastMessage: { type: "success", toastMessage: message },
-        });
-      } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
-        console.error("Error fetching voters:", error);
-        set({
-          toastMessage: {
-            type: "error",
-            toastMessage:
-              error.response?.data?.message ?? "Failed to fetch voters",
-          },
-        });
-      }
-    },
+  clearFilter: () => set({ filter: null }),
 
-    addVoter: async (newVoter) => {
-      try {
-        const response = await axiosInstance.post("/create", newVoter);
-        const { message } = response.data;
-        await get().setVoterList();
-        set({ toastMessage: { type: "success", toastMessage: message } });
-      } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
-        console.error("Error adding voter:", error);
-        set({
-          toastMessage: {
-            type: "error",
-            toastMessage:
-              error.response?.data?.message ?? "Failed to add voter",
-          },
-        });
-      }
-    },
+  setVoterList: async (filterOverride) => {
+    const axiosInstance = getAxiosInstance(); // 🔥 always fresh token
+    const filter = filterOverride ?? get().filter;
 
-    updateVoter: async (voterObjectId, updatedData) => {
-      try {
-        const response = await axiosInstance.put(
-          `/update/${voterObjectId}`,
-          updatedData
-        );
-        const { message } = response.data;
-        set({ toastMessage: { type: "success", toastMessage: message } });
-      } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
-        console.error("Error updating voter:", error);
-        set({
-          toastMessage: {
-            type: "error",
-            toastMessage:
-              error.response?.data?.message ?? "Failed to update voter",
-          },
-        });
-      }
-    },
+    try {
+      const response = await axiosInstance.post("/get-all", filter ?? {});
+      const { message, voterList } = response.data;
+      set({
+        voterList,
+        toastMessage: { type: "success", toastMessage: message },
+      });
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      set({
+        toastMessage: {
+          type: "error",
+          toastMessage:
+            error.response?.data?.message ?? "Failed to fetch voters",
+        },
+      });
+    }
+  },
 
-    deleteVoter: async (voterObjectId) => {
-      try {
-        const response = await axiosInstance.delete(`/delete/${voterObjectId}`);
-        const { message } = response.data;
-        set({ toastMessage: { type: "success", toastMessage: message } });
-      } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
-        console.error("Error deleting voter:", error);
-        set({
-          toastMessage: {
-            type: "error",
-            toastMessage:
-              error.response?.data?.message ?? "Failed to delete voter",
-          },
-        });
-      }
-    },
-  };
-});
+  addVoter: async (newVoter) => {
+    const axiosInstance = getAxiosInstance();
+    try {
+      const response = await axiosInstance.post("/create", newVoter);
+      const { message } = response.data;
+      await get().setVoterList();
+      set({ toastMessage: { type: "success", toastMessage: message } });
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      set({
+        toastMessage: {
+          type: "error",
+          toastMessage: error.response?.data?.message ?? "Failed to add voter",
+        },
+      });
+    }
+  },
+
+  updateVoter: async (voterObjectId, updatedData) => {
+    const axiosInstance = getAxiosInstance();
+    try {
+      const response = await axiosInstance.put(
+        `/update/${voterObjectId}`,
+        updatedData
+      );
+      const { message } = response.data;
+      set({ toastMessage: { type: "success", toastMessage: message } });
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      set({
+        toastMessage: {
+          type: "error",
+          toastMessage:
+            error.response?.data?.message ?? "Failed to update voter",
+        },
+      });
+    }
+  },
+
+  deleteVoter: async (voterObjectId) => {
+    const axiosInstance = getAxiosInstance();
+    try {
+      const response = await axiosInstance.delete(`/delete/${voterObjectId}`);
+      const { message } = response.data;
+      set({ toastMessage: { type: "success", toastMessage: message } });
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      set({
+        toastMessage: {
+          type: "error",
+          toastMessage:
+            error.response?.data?.message ?? "Failed to delete voter",
+        },
+      });
+    }
+  },
+}));

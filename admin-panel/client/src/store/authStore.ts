@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import axios from "axios";
-import * as jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // ✅ Correct import
 
 const API_BASE_URL = "http://localhost:3000/api/v1/admin";
 
@@ -36,11 +36,17 @@ export const useAuthStore = create<TAuthStore>((set, get) => ({
 
   login: async (userName: string, password: string) => {
     set({ loading: true, error: null });
+
+    // ✅ Clear old tokens before new login
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminInfo");
+
     try {
       const response = await axios.post(`${API_BASE_URL}/login`, {
         userName,
         password,
       });
+
       const { token, data } = response.data;
 
       set({ admin: data, token, loading: false });
@@ -67,6 +73,7 @@ export const useAuthStore = create<TAuthStore>((set, get) => ({
     set({ admin: null, token: null });
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminInfo");
+
     if (isAuto) {
       alert("Session expired. Please login again.");
     }
@@ -84,22 +91,28 @@ export const useAuthStore = create<TAuthStore>((set, get) => ({
     if (!token) return;
 
     try {
-      const decoded = jwt_decode.jwtDecode<JWTPayload>(token);
+      const decoded = jwtDecode<JWTPayload>(token);
       const currentTime = Date.now() / 1000;
+
+      // ✅ Verify exp exists and is valid
+      if (!decoded.exp || decoded.exp <= currentTime) {
+        get().logout(true);
+        return;
+      }
+
       const timeLeft = decoded.exp - currentTime;
 
-      if (timeLeft <= 0) {
-        get().logout(true); // auto logout
-      } else {
-        // Set a timer to auto logout when token expires
-        setTimeout(() => get().logout(true), timeLeft * 1000);
-      }
-    } catch (error) {
-      console.error("Failed to decode JWT:", error);
+      // ✅ Automatically logout when token expires
+      setTimeout(() => get().logout(true), timeLeft * 1000);
+    } catch (err) {
+      console.log(err)
       get().logout(true);
     }
   },
 }));
 
-// Immediately check token expiry on app start
-useAuthStore.getState().checkTokenExpiry();
+// ✅ Check token expiry only if a token exists
+const storedToken = localStorage.getItem("adminToken");
+if (storedToken) {
+  useAuthStore.getState().checkTokenExpiry();
+}

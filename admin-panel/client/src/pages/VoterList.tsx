@@ -83,40 +83,6 @@ const VoterList: React.FC = () => {
     []
   );
 
-  // 🗑️ Handle Delete Operation
-  const onDelete = useCallback(async () => {
-    if (!voterObjectId) return;
-    await deleteVoter(voterObjectId);
-    await setVoterList(); // refresh list
-    setVoterObjectId("");
-  }, [voterObjectId, deleteVoter, setVoterList]);
-
-  // 🧩 Update Voter Operation
-  const updateVoterFunction = useCallback(
-    async (updatedVoterData: Partial<TVoter>) => {
-      if (!updatedVoterData._id) return;
-      await updateVoter(updatedVoterData._id, updatedVoterData);
-      await setVoterList();
-      setVoterToBeEdited(undefined);
-    },
-    [updateVoter, setVoterList]
-  );
-
-  // ➕ Add Voter Operation
-  const addVoterFunction = useCallback(
-    async (voterFromData: Partial<TVoter>) => {
-      await addVoter(voterFromData);
-      setIsOpenAddVoterModal(false);
-      await setVoterList();
-    },
-    [addVoter, setVoterList]
-  );
-
-  // 🧭 Fetch division list on mount
-  useEffect(() => {
-    setDivisionList();
-  }, [setDivisionList]);
-
   // Fetch voter list whenever filter submits
   const getVoterListUsingFilter = useCallback(async () => {
     if (
@@ -167,7 +133,42 @@ const VoterList: React.FC = () => {
     filter.upazilaName,
     setVoterList,
   ]);
-  
+
+  // 🗑️ Handle Delete Operation
+  const onDelete = useCallback(async () => {
+    if (!voterObjectId) return;
+    await deleteVoter(voterObjectId);
+    await setVoterList(); // refresh list
+    setVoterObjectId("");
+  }, [voterObjectId, deleteVoter, setVoterList]);
+
+  // 🧩 Update Voter Operation
+  const updateVoterFunction = useCallback(
+    async (updatedVoterData: Partial<TVoter>) => {
+      if (!updatedVoterData._id) return;
+      await updateVoter(updatedVoterData._id, updatedVoterData);
+      // await setVoterList();
+      await getVoterListUsingFilter();
+      setVoterToBeEdited(undefined);
+    },
+    [updateVoter, getVoterListUsingFilter]
+  );
+
+  // ➕ Add Voter Operation
+  const addVoterFunction = useCallback(
+    async (voterFromData: Partial<TVoter>) => {
+      await addVoter(voterFromData);
+      setIsOpenAddVoterModal(false);
+      await setVoterList();
+    },
+    [addVoter, setVoterList]
+  );
+
+  // 🧭 Fetch division list on mount
+  useEffect(() => {
+    setDivisionList();
+  }, [setDivisionList]);
+
   // 🔍 Filter voters based on search
   useEffect(() => {
     const filterList = voterList.filter(
