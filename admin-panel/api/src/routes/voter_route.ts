@@ -169,29 +169,27 @@ voterRouter.put(
     try {
       const { voterObjectId } = req.params;
 
-      const { voterName, dateOfBirth, homeAddress, constituency } = req.body;
+      const { voterId, voterName, dateOfBirth, homeAddress, constituency } =
+        req.body;
 
       const updateFields: any = {};
 
       // top-level fields
+      if (voterId) updateFields.voterId = voterId;
       if (voterName) updateFields.voterName = voterName;
       if (dateOfBirth) updateFields.dateOfBirth = dateOfBirth;
 
       // nested constituency updates
       if (homeAddress) updateFields["constituency.homeAddress"] = homeAddress;
       if (constituency) {
-        for (const [key, value] of Object.entries(constituency)) {
-          updateFields[`constituency.${key}`] = value;
-        }
+        updateFields.constituency = constituency;
       }
 
       const data = await database
         .collection<VoterModel>(CollectionListNames.VOTER)
-        .findOneAndUpdate(
-          { _id: new ObjectId(voterObjectId) },
-          { $set: updateFields },
-          { returnDocument: "after" }
-        );
+        .findOneAndReplace({ _id: new ObjectId(voterObjectId) }, updateFields, {
+          returnDocument: "after",
+        });
 
       if (!data) {
         return res.status(404).json({ message: "Voter not found" });
