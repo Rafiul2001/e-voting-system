@@ -12,7 +12,6 @@ const navItems = [
   { name: "Home", url: "/" },
   { name: "Constituency Records", url: "/constituency-records" },
   { name: "Voter Records", url: "/voter-records" },
-  { name: "Candidate Records", url: "/candidate-records" },
   { name: "Election Records", url: "/election-records" },
 ];
 

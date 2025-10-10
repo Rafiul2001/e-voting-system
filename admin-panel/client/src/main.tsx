@@ -4,7 +4,6 @@ import "./index.css";
 import App from "./App.tsx";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import VoterList from "./pages/VoterList.tsx";
-import CandidateList from "./pages/CandidateList.tsx";
 import ElectionList from "./pages/ElectionList.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
@@ -71,14 +70,6 @@ const router = createBrowserRouter([
         Component: () => (
           <ProtectedRoute>
             <EditConstituency />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "candidate-records",
-        Component: () => (
-          <ProtectedRoute>
-            <CandidateList />
           </ProtectedRoute>
         ),
       },
