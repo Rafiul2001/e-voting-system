@@ -26,7 +26,7 @@ export class CandidateContract extends Contract {
     candidateName: string,
     voterId: string,
     electionId: string,
-    constituencyNumber: number,
+    constituencyNumber: string,
     constituencyName: string,
     affiliation: string,
     partyName: string | null
@@ -82,7 +82,7 @@ export class CandidateContract extends Contract {
         electionId,
         constituency: [
           {
-            constituencyNumber: constituencyNumber,
+            constituencyNumber: Number(constituencyNumber),
             constituencyName: constituencyName,
           },
         ],
@@ -118,7 +118,7 @@ export class CandidateContract extends Contract {
     ctx: Context,
     candidateId: string,
     electionId: string,
-    constituencyNumber: number,
+    constituencyNumber: string,
     constituencyName: string
   ): Promise<string> {
     this._require(
@@ -169,7 +169,7 @@ export class CandidateContract extends Contract {
 
       if (
         candidateRecord.constituency.find(
-          (can) => can.constituencyNumber === constituencyNumber
+          (can) => can.constituencyNumber === Number(constituencyNumber)
         )
       ) {
         return JSON.stringify({
@@ -179,8 +179,8 @@ export class CandidateContract extends Contract {
       }
 
       candidateRecord.constituency.push({
-        constituencyNumber,
-        constituencyName,
+        constituencyNumber: Number(constituencyNumber),
+        constituencyName: constituencyName,
       });
 
       candidateRecord.updatedAt = new Date().toISOString();
@@ -207,7 +207,7 @@ export class CandidateContract extends Contract {
     ctx: Context,
     candidateId: string,
     electionId: string,
-    constituencyNumber: number,
+    constituencyNumber: string,
     constituencyName: string
   ): Promise<string> {
     this._require(
@@ -258,7 +258,7 @@ export class CandidateContract extends Contract {
 
       if (
         !candidateRecord.constituency.find(
-          (can) => can.constituencyNumber === constituencyNumber
+          (can) => can.constituencyNumber === Number(constituencyNumber)
         )
       ) {
         return JSON.stringify({
@@ -268,7 +268,7 @@ export class CandidateContract extends Contract {
       }
 
       const updatedConstituencyList = candidateRecord.constituency.filter(
-        (con) => con.constituencyNumber !== constituencyNumber
+        (con) => con.constituencyNumber !== Number(constituencyNumber)
       );
 
       candidateRecord.constituency = updatedConstituencyList;
@@ -282,6 +282,57 @@ export class CandidateContract extends Contract {
 
       return JSON.stringify({
         message: "Constituency is removed",
+        data: candidateRecord,
+      });
+    } catch (error) {
+      return `Internal server error: ${error}`;
+    }
+  }
+
+  @Transaction()
+  public async DeleteCandidate(
+    ctx: Context,
+    candidateId: string,
+    electionId: string
+  ): Promise<string> {
+    this._require(candidateId, "Candidate is required");
+    try {
+      const electionString = await ctx.stub.invokeChaincode(
+        electionCCName,
+        ["getElectionById", electionId],
+        votingChannel
+      );
+
+      if (!electionString.payload) {
+        return JSON.stringify({
+          message: "Election not found",
+          data: null,
+        });
+      }
+      const election = JSON.parse(electionString.payload.toString());
+      if (!(election.status === "initialized")) {
+        return JSON.stringify({
+          message:
+            "Candidate can be deleted if the election state is initialized",
+        });
+      }
+
+      const candidateBytes = await ctx.stub.getState(candidateId);
+      if (candidateBytes.length === 0) {
+        return JSON.stringify({
+          message: "Candidate is not found",
+          data: null,
+        });
+      }
+
+      const candidateRecord = JSON.parse(
+        candidateBytes.toString()
+      ) as CandidateRecord;
+
+      await ctx.stub.deleteState(candidateId);
+
+      return JSON.stringify({
+        message: "Candidate deleted successfully",
         data: candidateRecord,
       });
     } catch (error) {
@@ -355,7 +406,7 @@ export class CandidateContract extends Contract {
       selector: {
         constituency: {
           $elemMatch: {
-            constituencyNumber: constituencyNumber,
+            constituencyNumber: Number(constituencyNumber),
             constituencyName: constituencyName,
           },
         },
