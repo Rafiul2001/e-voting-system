@@ -67,7 +67,7 @@ const ElectionList: React.FC = () => {
 
       {/* Election Table */}
       <div className="flex flex-col gap-2">
-        <ul className="grid grid-cols-4">
+        <ul className="grid grid-cols-5">
           <li>
             <Text size={5}>Sl no.</Text>
           </li>
@@ -78,15 +78,19 @@ const ElectionList: React.FC = () => {
             <Text size={5}>Election Name</Text>
           </li>
           <li>
+            <Text size={5}>Election Status</Text>
+          </li>
+          <li>
             <Text size={5}>Actions</Text>
           </li>
         </ul>
 
-        {electionList.map((election, index) => {
+        {electionList && electionList.map((election, index) => {
           return (
-            <ul key={index} className="grid grid-cols-4 items-center">
+            <ul key={index} className="grid grid-cols-5 items-center">
               <li>{index + 1}</li>
               <li>{election.electionId}</li>
+              <li>{election.electionName}</li>
               <li>{election.status}</li>
               <li className="flex flex-row items-center gap-3">
                 <button

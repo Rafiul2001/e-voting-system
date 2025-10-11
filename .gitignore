@@ -8,5 +8,7 @@ chaincodes/voter-permit-cc/node_modules
 chaincodes/voter-permit-cc/dist
 chaincodes/election-cc/node_modules
 chaincodes/election-cc/dist
+chaincodes/candidate-cc/node_modules
+chaincodes/candidate-cc/dist
 
 admin-panel/api/src/networkConnection/wallet

@@ -16,11 +16,7 @@ import type { TConstituencyModel } from "../types/ConstituencyType";
 
 const ConstituencyList: React.FC = () => {
   const navigate = useNavigate();
-  const divisionList = useConstituencyStore((s) => s.divisionList);
-  const filter = useConstituencyStore((s) => s.filter);
-  const setFilter = useConstituencyStore((s) => s.setFilter);
-  const addDivision = useConstituencyStore((s) => s.addDivision);
-  const updateConstituency = useConstituencyStore((s) => s.updateConstituency);
+  const {divisionList, filter, setFilter, addDivision, updateConstituency } = useConstituencyStore();
 
   const tableDataStartsRef = useRef<HTMLTableElement>(null);
   const [toastMessage, setToastMessage] = useState<{
