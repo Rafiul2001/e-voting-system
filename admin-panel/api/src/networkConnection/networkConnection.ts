@@ -6,6 +6,7 @@ import { buildCCPOrg, buildWallet } from "../tools/appUtil";
 
 const channelName = "votingchannel";
 const electionCC = "electioncc";
+const candidateCC = "candidatecc";
 
 const electionCommissionOrg = "ElectionCommissionMSP";
 const adminId = "admin";
@@ -73,6 +74,21 @@ export async function getElectionContractAndGateway() {
       networkElectionCommission.getContract(electionCC);
 
     return contractElectionCC;
+  } catch (error) {
+    console.error(`Error in setup: ${error}`);
+    process.exit(1);
+  }
+}
+
+export async function getCandidateContractAndGateway() {
+  try {
+    /** ******* Fabric client init: Using ElectionCommission identity to ElectionCommission Peer ******* */
+    const networkElectionCommission =
+      await gatewayElectionCommission.getNetwork(channelName);
+    const contractCandidateCC =
+      networkElectionCommission.getContract(candidateCC);
+
+    return contractCandidateCC;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
     process.exit(1);
