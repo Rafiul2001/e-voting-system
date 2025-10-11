@@ -200,6 +200,30 @@ export class ElectionContract extends Contract {
   }
 
   @Transaction(false)
+  public async getElectionById(
+    ctx: Context,
+    electionId: string
+  ): Promise<string> {
+    try {
+      const existingElectionBytes = await ctx.stub.getState(electionId);
+      if (existingElectionBytes.length === 0) {
+        return JSON.stringify({
+          message: "Election not found",
+          data: null,
+        });
+      }
+      const election = JSON.parse(existingElectionBytes.toString());
+
+      return JSON.stringify({
+        message: "Successfully get the election",
+        data: election,
+      });
+    } catch (error) {
+      return `Internal server error: ${error}`;
+    }
+  }
+
+  @Transaction(false)
   public async electionExists(
     ctx: Context,
     electionName: string
