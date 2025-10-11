@@ -5,9 +5,7 @@ dotenv.config();
 export const CollectionListNames = {
   VOTER: "voter",
   CONSTITUENCY: "constituency",
-  CANDIDATE: "candidate",
   ADMIN: "admin",
-  ELECTION: "election",
 } as const;
 
 interface IConfig {
@@ -24,10 +22,8 @@ const config: IConfig = {
   databaseName: process.env.DATABASE_NAME || "adminPanel",
   collectionList: [
     CollectionListNames.ADMIN,
-    CollectionListNames.CANDIDATE,
     CollectionListNames.CONSTITUENCY,
     CollectionListNames.VOTER,
-    CollectionListNames.ELECTION,
   ],
   jwtPrivateKey: process.env.JWT_PRIVATE_KEY || "privatekey",
 };
