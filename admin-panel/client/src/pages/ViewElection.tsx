@@ -56,7 +56,6 @@ const ViewElection = () => {
 
   const handleAddCandidate = useCallback(
     async (newCandidate: TCreateCandidate) => {
-      console.log(newCandidate)
       const toast = await createCandidate(newCandidate);
       setToastMessage(toast);
     },
@@ -89,54 +88,51 @@ const ViewElection = () => {
 
   return (
     <Container className="relative">
-      <Text size={3} className="font-semibold">
-        Election Id: {electionId}
-      </Text>
-
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="cursor-pointer px-4 py-1 border border-indigo-500"
-      >
-        Add Candidate
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <Text size={3} className="font-bold text-gray-800">
+          Election ID: <span className="text-indigo-600">{electionId}</span>
+        </Text>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg shadow hover:bg-indigo-700 transition-all"
+        >
+          + Add Candidate
+        </button>
+      </div>
 
       {/* Candidate Table */}
-      <div className="flex flex-col gap-2">
-        <ul className="grid grid-cols-6">
-          <li>
-            <Text size={5}>Sl no.</Text>
-          </li>
-          <li>
-            <Text size={5}>Candidate Id</Text>
-          </li>
-          <li>
-            <Text size={5}>Candidate Name</Text>
-          </li>
-          <li>
-            <Text size={5}>Voter Id</Text>
-          </li>
-          <li>
-            <Text size={5}>Stood for constituencies</Text>
-          </li>
-          <li>
-            <Text size={5}>Actions</Text>
-          </li>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <ul className="grid grid-cols-6 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-700">
+          <li>Sl No.</li>
+          <li>Candidate ID</li>
+          <li>Candidate Name</li>
+          <li>Voter ID</li>
+          <li className="text-center">Constituencies</li>
+          <li className="text-center">Actions</li>
         </ul>
 
-        {candidateList.length > 0 &&
-          candidateList.map((candidate, index) => {
-            return (
-              <ul key={index} className="grid grid-cols-6 items-center">
+        {candidateList && candidateList.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {candidateList.map((candidate, index) => (
+              <ul
+                key={index}
+                className="grid grid-cols-6 items-center px-6 py-4 text-gray-700 hover:bg-gray-50 transition-all"
+              >
                 <li>{index + 1}</li>
-                <li>{candidate.candidateId}</li>
+                <li className="truncate">{candidate.candidateId}</li>
                 <li>{candidate.candidateName}</li>
                 <li>{candidate.voterId}</li>
-                <li className="flex flex-wrap items-center justify-center gap-2">
-                  {candidate.constituency.map((con, index) => (
-                    <span key={index}>{con.constituencyName}</span>
+                <li className="flex flex-wrap justify-center gap-2">
+                  {candidate.constituency.map((con, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-indigo-100 text-indigo-700 px-3 py-1 text-xs rounded-full"
+                    >
+                      {con.constituencyName}
+                    </span>
                   ))}
                 </li>
-                <li className="flex flex-row items-center gap-3">
+                <li className="flex justify-center gap-3">
                   <button
                     onClick={() => {
                       setSelectedAddConstituencyData({
@@ -144,10 +140,12 @@ const ViewElection = () => {
                         electionId: candidate.electionId,
                       });
                     }}
-                    className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl"
+                    className="p-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-all shadow-sm"
+                    title="Add Constituency"
                   >
-                    <IoMdAdd size={24} />
+                    <IoMdAdd size={22} />
                   </button>
+
                   <button
                     onClick={() => {
                       setSelectedRemoveConstituencyData({
@@ -156,10 +154,12 @@ const ViewElection = () => {
                         constituencyList: candidate.constituency,
                       });
                     }}
-                    className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
+                    className="p-2 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-all shadow-sm"
+                    title="Remove Constituency"
                   >
-                    <IoMdRemoveCircleOutline size={24} />
+                    <IoMdRemoveCircleOutline size={22} />
                   </button>
+
                   <button
                     onClick={() => {
                       setDeleteFunction(() => async () => {
@@ -170,16 +170,23 @@ const ViewElection = () => {
                         setToastMessage(toast);
                       });
                     }}
-                    className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
+                    className="p-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-sm"
+                    title="Delete Candidate"
                   >
-                    <MdDelete size={24} />
+                    <MdDelete size={22} />
                   </button>
                 </li>
               </ul>
-            );
-          })}
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-gray-500 text-sm">
+            No candidates found for this election.
+          </div>
+        )}
       </div>
 
+      {/* Modals */}
       <RemoveConstituencyToCandidateModal
         data={selectedRemoveConstituencyData}
         isOpen={!!selectedRemoveConstituencyData}
@@ -204,7 +211,6 @@ const ViewElection = () => {
         onSuccess={handleAddCandidate}
       />
 
-      {/* Delete Modal */}
       <DeleteModal
         isOpen={!!deleteFunction}
         confirmMessage="Do you want to delete this candidate?"
@@ -217,7 +223,6 @@ const ViewElection = () => {
         }}
       />
 
-      {/* Toast Modal */}
       <ToastModal
         type={toastMessage?.type}
         toastMessage={toastMessage?.toastMessage}

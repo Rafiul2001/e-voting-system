@@ -29,13 +29,11 @@ const ElectionList: React.FC = () => {
   } = useElectionStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [toastMessage, setToastMessage] = useState<{
     type: string;
     toastMessage: string;
   }>();
 
-  // Form fields for modal
   const electionFields: TFormField[] = [
     {
       name: "electionName",
@@ -59,49 +57,58 @@ const ElectionList: React.FC = () => {
 
   return (
     <Container>
-      <Text size={3} className="font-semibold">
-        Election List
-      </Text>
-
-      <button onClick={() => setIsModalOpen(true)} className="cursor-pointer">
-        Add Election
-      </button>
-      {/* All the Elections */}
+      <div className="flex items-center justify-between mb-6">
+        <Text size={3} className="font-bold text-gray-800">
+          Election List
+        </Text>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg shadow hover:bg-indigo-700 transition-all"
+        >
+          + Add Election
+        </button>
+      </div>
 
       {/* Election Table */}
-      <div className="flex flex-col gap-2">
-        <ul className="grid grid-cols-5">
-          <li>
-            <Text size={5}>Sl no.</Text>
-          </li>
-          <li>
-            <Text size={5}>Election Id</Text>
-          </li>
-          <li>
-            <Text size={5}>Election Name</Text>
-          </li>
-          <li>
-            <Text size={5}>Election Status</Text>
-          </li>
-          <li>
-            <Text size={5}>Actions</Text>
-          </li>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <ul className="grid grid-cols-5 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-700">
+          <li>Sl No.</li>
+          <li>Election ID</li>
+          <li>Election Name</li>
+          <li>Status</li>
+          <li className="text-center">Actions</li>
         </ul>
 
-        {electionList &&
-          electionList.map((election, index) => {
-            return (
-              <ul key={index} className="grid grid-cols-5 items-center">
+        {electionList && electionList.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {electionList.map((election, index) => (
+              <ul
+                key={index}
+                className="grid grid-cols-5 items-center px-6 py-4 text-gray-700 hover:bg-gray-50 transition-all"
+              >
                 <li>{index + 1}</li>
-                <li>{election.electionId}</li>
+                <li className="truncate">{election.electionId}</li>
                 <li>{election.electionName}</li>
-                <li>{election.status}</li>
-                <li className="flex flex-row items-center gap-3">
+                <li>
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      election.status === "ongoing"
+                        ? "bg-teal-100 text-teal-800"
+                        : election.status === "finished"
+                        ? "bg-rose-100 text-rose-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {election.status}
+                  </span>
+                </li>
+                <li className="flex flex-row items-center justify-center gap-3">
                   <button
-                    onClick={() => {
-                      navigate(`/election-records/${election.electionId}`);
-                    }}
-                    className="cursor-pointer p-2 bg-indigo-500 text-white rounded-md"
+                    onClick={() =>
+                      navigate(`/election-records/${election.electionId}`)
+                    }
+                    className="p-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-all shadow-sm"
+                    title="View Details"
                   >
                     <GrView size={18} />
                   </button>
@@ -110,7 +117,8 @@ const ElectionList: React.FC = () => {
                       const toast = await startElection(election.electionId);
                       setToastMessage(toast);
                     }}
-                    className="cursor-pointer p-2 bg-teal-500 text-white rounded-md"
+                    className="p-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-all shadow-sm"
+                    title="Start Election"
                   >
                     <VscDebugStart size={18} />
                   </button>
@@ -119,17 +127,21 @@ const ElectionList: React.FC = () => {
                       const toast = await finishElection(election.electionId);
                       setToastMessage(toast);
                     }}
-                    className="cursor-pointer p-2 bg-rose-500 text-white rounded-md"
+                    className="p-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-sm"
+                    title="Finish Election"
                   >
                     <FaStopCircle size={18} />
                   </button>
                 </li>
               </ul>
-            );
-          })}
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-gray-500 text-sm">
+            No elections found.
+          </div>
+        )}
       </div>
-      {/* Vew Election */}
-      {/* Add Candidate */}
 
       {/* Toast Modal */}
       <ToastModal
@@ -138,6 +150,7 @@ const ElectionList: React.FC = () => {
         setToastMessage={setToastMessage}
       />
 
+      {/* Add Election Modal */}
       <AddElectionModal
         isOpen={isModalOpen}
         setIsOpen={setIsModalOpen}
