@@ -11,6 +11,7 @@ import Login from "./pages/Login.tsx";
 import ConstituencyList from "./pages/ConstituencyList.tsx";
 import EditConstituency from "./pages/EditConstituency.tsx";
 import { useAuthStore } from "./store/authStore";
+import ViewElection from "./pages/ViewElection.tsx";
 
 // Create a wrapper for protected routes
 // eslint-disable-next-line react-refresh/only-export-components
@@ -78,6 +79,14 @@ const router = createBrowserRouter([
         Component: () => (
           <ProtectedRoute>
             <ElectionList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "election-records/:electionId",
+        Component: () => (
+          <ProtectedRoute>
+            <ViewElection />
           </ProtectedRoute>
         ),
       },

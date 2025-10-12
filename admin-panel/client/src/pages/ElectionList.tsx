@@ -7,8 +7,9 @@ import { useElectionStore } from "../store/electionStore";
 import { useEffect, useState } from "react";
 import AddElectionModal from "../components/modals/election/AddElectionModal";
 import ToastModal from "../components/ToastModal";
+import { useNavigate } from "react-router";
 
-export type TFormField = {
+type TFormField = {
   name: string;
   label: string;
   type: string;
@@ -17,6 +18,8 @@ export type TFormField = {
 };
 
 const ElectionList: React.FC = () => {
+  const navigate = useNavigate();
+
   const {
     electionList,
     setElectionList,
@@ -85,42 +88,45 @@ const ElectionList: React.FC = () => {
           </li>
         </ul>
 
-        {electionList && electionList.map((election, index) => {
-          return (
-            <ul key={index} className="grid grid-cols-5 items-center">
-              <li>{index + 1}</li>
-              <li>{election.electionId}</li>
-              <li>{election.electionName}</li>
-              <li>{election.status}</li>
-              <li className="flex flex-row items-center gap-3">
-                <button
-                  onClick={() => {}}
-                  className="cursor-pointer p-2 bg-indigo-500 text-white rounded-md"
-                >
-                  <GrView size={18} />
-                </button>
-                <button
-                  onClick={async () => {
-                    const toast = await startElection(election.electionId);
-                    setToastMessage(toast);
-                  }}
-                  className="cursor-pointer p-2 bg-teal-500 text-white rounded-md"
-                >
-                  <VscDebugStart size={18} />
-                </button>
-                <button
-                  onClick={async () => {
-                    const toast = await finishElection(election.electionId);
-                    setToastMessage(toast);
-                  }}
-                  className="cursor-pointer p-2 bg-rose-500 text-white rounded-md"
-                >
-                  <FaStopCircle size={18} />
-                </button>
-              </li>
-            </ul>
-          );
-        })}
+        {electionList &&
+          electionList.map((election, index) => {
+            return (
+              <ul key={index} className="grid grid-cols-5 items-center">
+                <li>{index + 1}</li>
+                <li>{election.electionId}</li>
+                <li>{election.electionName}</li>
+                <li>{election.status}</li>
+                <li className="flex flex-row items-center gap-3">
+                  <button
+                    onClick={() => {
+                      navigate(`/election-records/${election.electionId}`);
+                    }}
+                    className="cursor-pointer p-2 bg-indigo-500 text-white rounded-md"
+                  >
+                    <GrView size={18} />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const toast = await startElection(election.electionId);
+                      setToastMessage(toast);
+                    }}
+                    className="cursor-pointer p-2 bg-teal-500 text-white rounded-md"
+                  >
+                    <VscDebugStart size={18} />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const toast = await finishElection(election.electionId);
+                      setToastMessage(toast);
+                    }}
+                    className="cursor-pointer p-2 bg-rose-500 text-white rounded-md"
+                  >
+                    <FaStopCircle size={18} />
+                  </button>
+                </li>
+              </ul>
+            );
+          })}
       </div>
       {/* Vew Election */}
       {/* Add Candidate */}
