@@ -53,9 +53,9 @@ const AddCandidateModal: React.FC<TDynamicFormModalProps> = ({
     (dist) => dist.districtName === filter.districtName
   );
 
-  //   const selectedConstituency = selectedDistrict?.constituencies.find(
-  //     (c) => c.constituencyNumber === filter.constituencyNumber
-  //   );
+  const selectedConstituency = selectedDistrict?.constituencies.find(
+    (c) => c.constituencyNumber === Number(formData.constituencyNumber)
+  );
 
   const onChangeFormData = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -119,11 +119,6 @@ const AddCandidateModal: React.FC<TDynamicFormModalProps> = ({
           "Constituency number must be a positive number.";
       }
 
-      // Constituency Name
-      if (!formData.constituencyName.trim()) {
-        errors.constituencyName = "Constituency name is required.";
-      }
-
       // Affiliation
       if (!formData.affiliation.trim()) {
         errors.affiliation =
@@ -142,10 +137,24 @@ const AddCandidateModal: React.FC<TDynamicFormModalProps> = ({
       }
 
       // Otherwise, submit form successfully
-      await onSuccess(formData);
+      if (selectedConstituency) {
+        await onSuccess({
+          ...formData,
+          constituencyName: selectedConstituency.constituencyName,
+        });
+      } else {
+        return;
+      }
       setIsOpen(false);
     },
-    [filter.districtName, filter.divisionName, formData, onSuccess, setIsOpen]
+    [
+      filter.districtName,
+      filter.divisionName,
+      formData,
+      onSuccess,
+      selectedConstituency,
+      setIsOpen,
+    ]
   );
 
   useEffect(() => {
@@ -302,40 +311,10 @@ const AddCandidateModal: React.FC<TDynamicFormModalProps> = ({
                     key={c.constituencyNumber}
                     value={c.constituencyNumber}
                   >
-                    {c.constituencyNumber}
+                    {c.constituencyNumber} - {c.constituencyName}
                   </option>
                 ))}
               </select>
-            </Flex>
-          )}
-
-          {/* Constituency Name */}
-          {selectedDistrict && (
-            <Flex className="flex-col gap-2">
-              <label htmlFor="constituencyName">
-                <Text size={5} className="font-semibold">
-                  Constituency Name
-                </Text>
-              </label>
-              <select
-                name="constituencyName"
-                id="constituencyName"
-                value={formData.constituencyName}
-                onChange={onChangeFormData}
-                className="border-[2px] border-indigo-300 focus:outline-indigo-500 px-2 py-1 rounded-md focus:text-indigo-700 font-medium"
-              >
-                <option value="">Select Constituency Name</option>
-                {selectedDistrict.constituencies.map((c) => (
-                  <option key={c.constituencyName} value={c.constituencyName}>
-                    {c.constituencyName}
-                  </option>
-                ))}
-              </select>
-              {inputError["constituencyName"] && (
-                <Text className="text-rose-400 font-medium">
-                  {inputError["constituencyName"]}
-                </Text>
-              )}
             </Flex>
           )}
 

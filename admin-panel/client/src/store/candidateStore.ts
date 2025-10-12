@@ -25,13 +25,9 @@ type TCandidateStore = {
   ) => Promise<TToastMessage>;
   createCandidate: (candidate: TCreateCandidate) => Promise<TToastMessage>;
   addConstituency: (
-    electionId: string,
-    candidateId: string,
     constituency: TAddConstituencyForCandidate
   ) => Promise<TToastMessage>;
   removeConstituency: (
-    electionId: string,
-    candidateId: string,
     constituency: TRemoveConstituencyForCandidate
   ) => Promise<TToastMessage>;
   deleteCandidate: (
@@ -138,15 +134,20 @@ export const useCandidateStore = create<TCandidateStore>((set) => ({
     return toastMessage;
   },
 
-  addConstituency: async (electionId, candidateId, constituency) => {
+  addConstituency: async (constituency) => {
     const toastMessage: TToastMessage = { type: "", toastMessage: "" };
     const axiosInstance = getAxiosInstance(); // 🔥 Always get fresh token
+    console.log(constituency);
 
     try {
       const response = await axiosInstance.put(
-        `/${electionId}/${candidateId}/addConstituency`,
-        constituency
+        `/${constituency.electionId}/${constituency.candidateId}/addConstituency`,
+        {
+          constituencyNumber: constituency.constituencyNumber,
+          constituencyName: constituency.constituencyName,
+        }
       );
+      console.log(response);
 
       if (response.data.candidate) {
         set((state) => ({
@@ -175,14 +176,17 @@ export const useCandidateStore = create<TCandidateStore>((set) => ({
     return toastMessage;
   },
 
-  removeConstituency: async (electionId, candidateId, constituency) => {
+  removeConstituency: async (constituency) => {
     const toastMessage: TToastMessage = { type: "", toastMessage: "" };
     const axiosInstance = getAxiosInstance(); // 🔥 Always get fresh token
 
     try {
       const response = await axiosInstance.put(
-        `/${electionId}/${candidateId}/removeConstituency`,
-        constituency
+        `/${constituency.electionId}/${constituency.candidateId}/removeConstituency`,
+        {
+          constituencyNumber: constituency.constituencyNumber,
+          constituencyName: constituency.constituencyName,
+        }
       );
 
       if (response.data.candidate) {

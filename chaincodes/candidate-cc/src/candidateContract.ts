@@ -66,10 +66,11 @@ export class CandidateContract extends Contract {
       if (election.status !== "initialized") {
         return JSON.stringify({
           message: `Candidate can be added if the election state is initialized ${election.status} | PayLoad: ${electionString.payload} | ${electionResponse}`,
+          data: null,
         });
       }
 
-      const exists = await this.candidateExists(ctx, candidateId);
+      const exists = await this.candidateExists(ctx, voterId);
       if (exists) {
         return JSON.stringify({
           message: `This candidate is exists with voter id: ${candidateId}`,
@@ -199,7 +200,7 @@ export class CandidateContract extends Contract {
 
       const txTime = ctx.stub.getTxTimestamp();
       const now = new Date(txTime.seconds.low * 1000).toISOString();
-      candidateRecord.updatedAt = now
+      candidateRecord.updatedAt = now;
 
       await ctx.stub.putState(
         candidateId,
@@ -254,7 +255,7 @@ export class CandidateContract extends Contract {
       const electionResponse = await JSON.parse(payloadString);
       const election = electionResponse.data;
 
-      if (election.status === "initialized") {
+      if (election.status !== "initialized") {
         return JSON.stringify({
           message:
             "Candidate can be updated if the election state is initialized",
@@ -300,7 +301,7 @@ export class CandidateContract extends Contract {
 
       const txTime = ctx.stub.getTxTimestamp();
       const now = new Date(txTime.seconds.low * 1000).toISOString();
-      candidateRecord.updatedAt = now
+      candidateRecord.updatedAt = now;
 
       await ctx.stub.putState(
         candidateId,
@@ -346,7 +347,7 @@ export class CandidateContract extends Contract {
       const electionResponse = await JSON.parse(payloadString);
       const election = electionResponse.data;
 
-      if (election.status === "initialized") {
+      if (election.status !== "initialized") {
         return JSON.stringify({
           message:
             "Candidate can be deleted if the election state is initialized",

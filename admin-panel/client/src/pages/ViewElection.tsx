@@ -8,10 +8,13 @@ import AddCandidateModal from "../components/modals/election/AddCandidateModal";
 import type {
   TAddConstituencyForCandidate,
   TCreateCandidate,
+  TRemoveConstituencyForCandidate,
 } from "../types/candidateType";
 import { MdDelete } from "react-icons/md";
 import { IoMdAdd, IoMdRemoveCircleOutline } from "react-icons/io";
 import AddConstituencyToCandidateModal from "../components/modals/election/AddConstituencyToCandidateModal";
+import RemoveConstituencyToCandidateModal from "../components/modals/election/RemoveConstituencyModal";
+import DeleteModal from "../components/modals/DeleteModal";
 
 const ViewElection = () => {
   const { electionId } = useParams();
@@ -20,7 +23,6 @@ const ViewElection = () => {
     candidateList,
     createCandidate,
     setCandidateListByElectionId,
-    setCandidateListByConstituency,
     addConstituency,
     removeConstituency,
     deleteCandidate,
@@ -32,11 +34,29 @@ const ViewElection = () => {
   }>();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAddConstituencyModalOpen, setIsAddConstituencyModalOpen] =
-    useState(false);
+
+  const [selectedAddConstituencyData, setSelectedAddConstituencyData] =
+    useState<{
+      candidateId: string;
+      electionId: string;
+    }>();
+
+  const [selectedRemoveConstituencyData, setSelectedRemoveConstituencyData] =
+    useState<{
+      candidateId: string;
+      electionId: string;
+      constituencyList: {
+        constituencyNumber: number;
+        constituencyName: string;
+      }[];
+    }>();
+
+  // Delete modal state
+  const [deleteFunction, setDeleteFunction] = useState<() => Promise<void>>();
 
   const handleAddCandidate = useCallback(
     async (newCandidate: TCreateCandidate) => {
+      console.log(newCandidate)
       const toast = await createCandidate(newCandidate);
       setToastMessage(toast);
     },
@@ -45,14 +65,18 @@ const ViewElection = () => {
 
   const handleAddConstituency = useCallback(
     async (newConstituency: TAddConstituencyForCandidate) => {
-      const toast = await addConstituency(
-        newConstituency.electionId,
-        newConstituency.candidateId,
-        newConstituency
-      );
+      const toast = await addConstituency(newConstituency);
       setToastMessage(toast);
     },
     [addConstituency]
+  );
+
+  const handleDeleteConstituency = useCallback(
+    async (constituency: TRemoveConstituencyForCandidate) => {
+      const toast = await removeConstituency(constituency);
+      setToastMessage(toast);
+    },
+    [removeConstituency]
   );
 
   useEffect(() => {
@@ -114,24 +138,37 @@ const ViewElection = () => {
                 </li>
                 <li className="flex flex-row items-center gap-3">
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      setSelectedAddConstituencyData({
+                        candidateId: candidate.candidateId,
+                        electionId: candidate.electionId,
+                      });
+                    }}
                     className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl"
                   >
                     <IoMdAdd size={24} />
                   </button>
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      setSelectedRemoveConstituencyData({
+                        candidateId: candidate.candidateId,
+                        electionId: candidate.electionId,
+                        constituencyList: candidate.constituency,
+                      });
+                    }}
                     className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
                   >
                     <IoMdRemoveCircleOutline size={24} />
                   </button>
                   <button
-                    onClick={async () => {
-                      const toast = await deleteCandidate(
-                        candidate.candidateId,
-                        candidate.electionId
-                      );
-                      setToastMessage(toast);
+                    onClick={() => {
+                      setDeleteFunction(() => async () => {
+                        const toast = await deleteCandidate(
+                          candidate.candidateId,
+                          candidate.electionId
+                        );
+                        setToastMessage(toast);
+                      });
                     }}
                     className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
                   >
@@ -143,9 +180,18 @@ const ViewElection = () => {
           })}
       </div>
 
+      <RemoveConstituencyToCandidateModal
+        data={selectedRemoveConstituencyData}
+        isOpen={!!selectedRemoveConstituencyData}
+        onSuccess={handleDeleteConstituency}
+        title="Delete Constituency"
+        setData={setSelectedRemoveConstituencyData}
+      />
+
       <AddConstituencyToCandidateModal
-        isOpen={isAddConstituencyModalOpen}
-        setIsOpen={setIsAddConstituencyModalOpen}
+        data={selectedAddConstituencyData}
+        isOpen={!!selectedAddConstituencyData}
+        setData={setSelectedAddConstituencyData}
         title="Add Constituency"
         onSuccess={handleAddConstituency}
       />
@@ -156,6 +202,19 @@ const ViewElection = () => {
         setIsOpen={setIsModalOpen}
         title="Add Candidate"
         onSuccess={handleAddCandidate}
+      />
+
+      {/* Delete Modal */}
+      <DeleteModal
+        isOpen={!!deleteFunction}
+        confirmMessage="Do you want to delete this candidate?"
+        onCancel={() => setDeleteFunction(undefined)}
+        onDelete={async () => {
+          if (deleteFunction) {
+            await deleteFunction();
+            setDeleteFunction(undefined);
+          }
+        }}
       />
 
       {/* Toast Modal */}
