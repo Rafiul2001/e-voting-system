@@ -5,7 +5,7 @@
 import { Context, Contract, Info, Transaction } from "fabric-contract-api";
 import { CandidateRecord } from "./record";
 // import { KeyEndorsementPolicy } from 'fabric-shim';
-import * as crypto from "crypto";
+// import * as crypto from "crypto";
 
 const electionCCName = "electioncc";
 const votePermitCCName = "voterpermitcc";
@@ -29,7 +29,7 @@ export class CandidateContract extends Contract {
     constituencyNumber: string,
     constituencyName: string,
     affiliation: string,
-    partyName: string | null
+    partyName: string
   ): Promise<string> {
     this._require(
       candidateId &&
@@ -50,17 +50,22 @@ export class CandidateContract extends Contract {
         votingChannel
       );
 
-      if (!electionString.payload) {
+      if (!electionString.payload || electionString.payload.length === 0) {
         return JSON.stringify({
-          message: "Election not found",
+          message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
           data: null,
         });
       }
-      const election = JSON.parse(electionString.payload.toString());
-      if (!(election.status === "initialized")) {
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status !== "initialized") {
         return JSON.stringify({
-          message:
-            "Candidate can be added if the election state is initialized",
+          message: `Candidate can be added if the election state is initialized ${election.status} | PayLoad: ${electionString.payload} | ${electionResponse}`,
         });
       }
 
@@ -88,7 +93,7 @@ export class CandidateContract extends Contract {
         ],
         affiliationType: {
           affiliation: affiliation,
-          partyName: partyName ?? null,
+          partyName: partyName,
         },
         createdAt: now,
         updatedAt: "",
@@ -104,7 +109,10 @@ export class CandidateContract extends Contract {
         data: CandidateRecord,
       });
     } catch (error) {
-      return `Internal server error: ${JSON.stringify(error)} | ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -139,8 +147,14 @@ export class CandidateContract extends Contract {
           data: null,
         });
       }
-      const election = JSON.parse(electionString.payload.toString());
-      if (!(election.status === "initialized")) {
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status !== "initialized") {
         return JSON.stringify({
           message:
             "Candidate can be updated if the election state is initialized",
@@ -183,7 +197,9 @@ export class CandidateContract extends Contract {
         constituencyName: constituencyName,
       });
 
-      candidateRecord.updatedAt = new Date().toISOString();
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+      candidateRecord.updatedAt = now
 
       await ctx.stub.putState(
         candidateId,
@@ -195,7 +211,10 @@ export class CandidateContract extends Contract {
         data: candidateRecord,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -228,8 +247,14 @@ export class CandidateContract extends Contract {
           data: null,
         });
       }
-      const election = JSON.parse(electionString.payload.toString());
-      if (!(election.status === "initialized")) {
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status === "initialized") {
         return JSON.stringify({
           message:
             "Candidate can be updated if the election state is initialized",
@@ -273,7 +298,9 @@ export class CandidateContract extends Contract {
 
       candidateRecord.constituency = updatedConstituencyList;
 
-      candidateRecord.updatedAt = new Date().toISOString();
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+      candidateRecord.updatedAt = now
 
       await ctx.stub.putState(
         candidateId,
@@ -285,7 +312,10 @@ export class CandidateContract extends Contract {
         data: candidateRecord,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -309,8 +339,14 @@ export class CandidateContract extends Contract {
           data: null,
         });
       }
-      const election = JSON.parse(electionString.payload.toString());
-      if (!(election.status === "initialized")) {
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status === "initialized") {
         return JSON.stringify({
           message:
             "Candidate can be deleted if the election state is initialized",
@@ -336,7 +372,10 @@ export class CandidateContract extends Contract {
         data: candidateRecord,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
     }
   }
 

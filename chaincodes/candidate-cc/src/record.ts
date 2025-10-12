@@ -11,7 +11,7 @@ export type TConstituency = {
 
 export type TAffiliation = {
   affiliation: string;
-  partyName: string | null;
+  partyName: string;
 };
 
 @Object()
@@ -34,7 +34,7 @@ export class CandidateRecord {
   @Property()
   public affiliationType: TAffiliation = {
     affiliation: "",
-    partyName: null,
+    partyName: "",
   };
 
   @Property()

@@ -54,7 +54,10 @@ export class ElectionContract extends Contract {
         data: electionRecord,
       });
     } catch (error) {
-      return `Internal server error: ${JSON.stringify(error)} | ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${JSON.stringify(error)} | ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -91,7 +94,9 @@ export class ElectionContract extends Contract {
       }
 
       electionRec.status = PermitStatus.STARTED;
-      electionRec.updatedAt = new Date().toISOString();
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+      electionRec.updatedAt = now;
 
       const isAlreadyFinished = await this.checkAlreadyFinished(
         ctx,
@@ -114,7 +119,10 @@ export class ElectionContract extends Contract {
         data: electionRec,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${JSON.stringify(error)} | ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -150,7 +158,9 @@ export class ElectionContract extends Contract {
       }
 
       electionRec.status = PermitStatus.FINISHED;
-      electionRec.updatedAt = new Date().toISOString();
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+      electionRec.updatedAt = now;
 
       await ctx.stub.putState(
         electionId,
@@ -162,7 +172,10 @@ export class ElectionContract extends Contract {
         data: electionRec,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${JSON.stringify(error)} | ${error}`,
+        data: null,
+      });
     }
   }
 
@@ -219,7 +232,10 @@ export class ElectionContract extends Contract {
         data: election,
       });
     } catch (error) {
-      return `Internal server error: ${error}`;
+      return JSON.stringify({
+        message: `Internal server error: ${JSON.stringify(error)} | ${error}`,
+        data: null,
+      });
     }
   }
 
