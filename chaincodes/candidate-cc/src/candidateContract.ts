@@ -70,10 +70,10 @@ export class CandidateContract extends Contract {
         });
       }
 
-      const exists = await this.candidateExists(ctx, voterId);
+      const exists = await this.candidateExists(ctx, voterId, electionId);
       if (exists) {
         return JSON.stringify({
-          message: `This candidate is exists with voter id: ${candidateId}`,
+          message: `This candidate is exists with voter id: ${candidateId} | election id: ${electionId}`,
           data: null,
         });
       }
@@ -481,12 +481,14 @@ export class CandidateContract extends Contract {
   @Transaction(false)
   public async candidateExists(
     ctx: Context,
-    voterId: string
+    voterId: string,
+    electionId: string
   ): Promise<boolean> {
     // Create a CouchDB rich query
     const queryString = {
       selector: {
         voterId: voterId,
+        electionId: electionId,
       },
     };
 
