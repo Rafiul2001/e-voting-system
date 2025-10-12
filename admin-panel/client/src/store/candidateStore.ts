@@ -218,7 +218,7 @@ export const useCandidateStore = create<TCandidateStore>((set) => ({
 
     try {
       const response = await axiosInstance.delete(
-        `/delete/${candidateId}/:${electionId}`
+        `/delete/${candidateId}/${electionId}`
       );
 
       if (response.data.candidate) {
@@ -239,7 +239,6 @@ export const useCandidateStore = create<TCandidateStore>((set) => ({
       toastMessage.toastMessage =
         err.response?.data?.message || "Failed to delete the candidate";
     }
-
     return toastMessage;
   },
 }));

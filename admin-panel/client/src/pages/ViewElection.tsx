@@ -5,7 +5,13 @@ import { useCandidateStore } from "../store/candidateStore";
 import { useCallback, useEffect, useState } from "react";
 import ToastModal from "../components/ToastModal";
 import AddCandidateModal from "../components/modals/election/AddCandidateModal";
-import type { TCreateCandidate } from "../types/candidateType";
+import type {
+  TAddConstituencyForCandidate,
+  TCreateCandidate,
+} from "../types/candidateType";
+import { MdDelete } from "react-icons/md";
+import { IoMdAdd, IoMdRemoveCircleOutline } from "react-icons/io";
+import AddConstituencyToCandidateModal from "../components/modals/election/AddConstituencyToCandidateModal";
 
 const ViewElection = () => {
   const { electionId } = useParams();
@@ -26,6 +32,8 @@ const ViewElection = () => {
   }>();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddConstituencyModalOpen, setIsAddConstituencyModalOpen] =
+    useState(false);
 
   const handleAddCandidate = useCallback(
     async (newCandidate: TCreateCandidate) => {
@@ -33,6 +41,18 @@ const ViewElection = () => {
       setToastMessage(toast);
     },
     [createCandidate]
+  );
+
+  const handleAddConstituency = useCallback(
+    async (newConstituency: TAddConstituencyForCandidate) => {
+      const toast = await addConstituency(
+        newConstituency.electionId,
+        newConstituency.candidateId,
+        newConstituency
+      );
+      setToastMessage(toast);
+    },
+    [addConstituency]
   );
 
   useEffect(() => {
@@ -58,7 +78,7 @@ const ViewElection = () => {
 
       {/* Candidate Table */}
       <div className="flex flex-col gap-2">
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           <li>
             <Text size={5}>Sl no.</Text>
           </li>
@@ -72,6 +92,9 @@ const ViewElection = () => {
             <Text size={5}>Voter Id</Text>
           </li>
           <li>
+            <Text size={5}>Stood for constituencies</Text>
+          </li>
+          <li>
             <Text size={5}>Actions</Text>
           </li>
         </ul>
@@ -79,35 +102,53 @@ const ViewElection = () => {
         {candidateList.length > 0 &&
           candidateList.map((candidate, index) => {
             return (
-              <ul key={index} className="grid grid-cols-5 items-center">
+              <ul key={index} className="grid grid-cols-6 items-center">
                 <li>{index + 1}</li>
                 <li>{candidate.candidateId}</li>
                 <li>{candidate.candidateName}</li>
                 <li>{candidate.voterId}</li>
+                <li className="flex flex-wrap items-center justify-center gap-2">
+                  {candidate.constituency.map((con, index) => (
+                    <span key={index}>{con.constituencyName}</span>
+                  ))}
+                </li>
                 <li className="flex flex-row items-center gap-3">
                   <button
                     onClick={() => {}}
-                    className="cursor-pointer p-2 bg-indigo-500 text-white rounded-md"
+                    className="p-2 cursor-pointer bg-indigo-500 hover:bg-indigo-800 text-white rounded-3xl"
                   >
-                    Add Constituency
+                    <IoMdAdd size={24} />
                   </button>
                   <button
                     onClick={() => {}}
-                    className="cursor-pointer p-2 bg-teal-500 text-white rounded-md"
+                    className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
                   >
-                    Remove Constituency
+                    <IoMdRemoveCircleOutline size={24} />
                   </button>
                   <button
-                    onClick={() => {}}
-                    className="cursor-pointer p-2 bg-rose-500 text-white rounded-md"
+                    onClick={async () => {
+                      const toast = await deleteCandidate(
+                        candidate.candidateId,
+                        candidate.electionId
+                      );
+                      setToastMessage(toast);
+                    }}
+                    className="p-2 cursor-pointer bg-rose-500 hover:bg-rose-800 text-white rounded-3xl"
                   >
-                    Delete Candidate
+                    <MdDelete size={24} />
                   </button>
                 </li>
               </ul>
             );
           })}
       </div>
+
+      <AddConstituencyToCandidateModal
+        isOpen={isAddConstituencyModalOpen}
+        setIsOpen={setIsAddConstituencyModalOpen}
+        title="Add Constituency"
+        onSuccess={handleAddConstituency}
+      />
 
       <AddCandidateModal
         electionId={electionId ?? ""}
