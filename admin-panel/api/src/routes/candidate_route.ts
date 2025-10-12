@@ -1,31 +1,48 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { verifyToken } from "../middlewares/verifyToken";
 import {
-  createCandidateBody,
-  deleteCandidateParams,
-  getAllCandidateParams,
-  updateCandidateBody,
-  updateCandidateParams,
-} from "../../shared/validators/candidateValidator";
-import { database } from "../mongodb_connection/connection";
-import { AFFILIATION_TYPE, CandidateModel } from "../models/candidateModel";
-import { CollectionListNames } from "../config/config";
-import { ObjectId } from "mongodb";
+  addConstituency,
+  createCandidate,
+  deleteCandidate,
+  getAllCandidatesByConstituencyNumber,
+  getAllCandidatesByElectionId,
+  removeConstituency,
+} from "../networkConnection/candidateContractFunctions/candidateContractFunctions";
 
 const candidateRouter = Router();
 
-// Get all candidates
+// Get all candidates by election ID
 candidateRouter.get(
   "/get-all/:electionId",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { electionId } = getAllCandidateParams.parse(req.params);
+      const { electionId } = req.params;
 
-      const candidateList = await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .find({ electionId: new ObjectId(electionId) })
-        .toArray();
+      const candidateList = await getAllCandidatesByElectionId(electionId);
+
+      return res.json({
+        message: "Successfully get all candidate",
+        candidateList: candidateList,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get all candidates by constituency number and name
+candidateRouter.get(
+  "/get-all/:constituencyNumber/:constituencyName",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { constituencyNumber, constituencyName } = req.params;
+
+      const candidateList = await getAllCandidatesByConstituencyNumber(
+        constituencyName,
+        Number(constituencyNumber)
+      );
 
       return res.json({
         message: "Successfully get all candidate",
@@ -44,62 +61,85 @@ candidateRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {
+        candidateName,
         voterId,
         electionId,
-        candidateName,
-        constituency,
-        affiliationType,
+        constituencyNumber,
+        constituencyName,
+        affiliation,
         partyName,
-      } = createCandidateBody.parse(req.body);
+      } = req.body;
 
-      const data = await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .find({
-          voterId: new ObjectId(voterId),
-        })
-        .toArray();
+      const candidateId = crypto.randomUUID();
 
-      if (
-        data.length > 0 &&
-        (data[0]?.affiliationType !== affiliationType ||
-          data[0]?.partyName !== partyName)
-      )
-        return res.status(409).json({
-          message: "Affiliation and party name must be same for same candidate",
-        });
-
-      const dataFoundUsingConstituencyNumber = data.find((can) => {
-        return (
-          can.constituency.constituencyNumber ===
-          constituency.constituencyNumber
-        );
-      });
-      if (data.length > 0 && dataFoundUsingConstituencyNumber)
-        return res.status(409).json({
-          message: "Already registered with this constituency",
-        });
-
-      if (data.length === 5)
-        return res.status(409).json({
-          message: "This candidate is already registered for 5 constituencies",
-        });
-
-      const newCandidate = new CandidateModel(
+      const response = await createCandidate(
+        candidateId,
         candidateName,
-        new ObjectId(voterId),
-        new ObjectId(electionId),
-        constituency,
-        affiliationType as (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE],
+        voterId,
+        electionId,
+        constituencyNumber,
+        constituencyName,
+        affiliation,
         partyName
       );
 
-      await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .insertOne(newCandidate);
+      console.log(response.message)
 
       return res.status(200).json({
-        message: "Successfully inserted new candidate",
-        candidate: newCandidate,
+        message: response.message,
+        candidate: response.data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Add constituency
+candidateRouter.put(
+  "/:electionId/:candidateId/addConstituency",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { electionId, candidateId } = req.params;
+      const { constituencyNumber, constituencyName } = req.body;
+
+      const response = await addConstituency(
+        candidateId,
+        electionId,
+        constituencyNumber,
+        constituencyName
+      );
+
+      return res.status(200).json({
+        message: response.message,
+        candidate: response.data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Remove constituency
+candidateRouter.put(
+  "/:electionId/:candidateId/removeConstituency",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { electionId, candidateId } = req.params;
+      const { constituencyNumber, constituencyName } = req.body;
+
+      const response = await removeConstituency(
+        candidateId,
+        electionId,
+        constituencyNumber,
+        constituencyName
+      );
+
+      return res.status(200).json({
+        message: response.message,
+        candidate: response.data,
       });
     } catch (error) {
       next(error);
@@ -109,24 +149,17 @@ candidateRouter.post(
 
 // Delete Candidate
 candidateRouter.delete(
-  "/delete/:candidateObjectId",
+  "/delete/:candidateId/:electionId",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { candidateObjectId } = deleteCandidateParams.parse(req.params);
+      const { candidateId, electionId } = req.params;
 
-      const data = await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .findOneAndDelete({ _id: new ObjectId(candidateObjectId) });
-
-      if (!data)
-        return res.status(404).json({
-          message: "Candidate does not exist",
-        });
+      const response = await deleteCandidate(candidateId, electionId);
 
       return res.status(200).json({
-        message: "Successfully deleted candidate",
-        candidate: data,
+        message: response.message,
+        candidate: response.data,
       });
     } catch (error) {
       next(error);
@@ -134,51 +167,4 @@ candidateRouter.delete(
   }
 );
 
-// Update Candidate
-candidateRouter.put(
-  "/update/:voterId",
-  verifyToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { voterId } = updateCandidateParams.parse(req.params);
-      const { affiliationType, partyName } = updateCandidateBody.parse(
-        req.body
-      );
-
-      const result = await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .updateMany(
-          {
-            voterId: new ObjectId(voterId),
-          },
-          {
-            $set: {
-              affiliationType:
-                affiliationType as (typeof AFFILIATION_TYPE)[keyof typeof AFFILIATION_TYPE],
-              partyName: partyName,
-            },
-          }
-        );
-
-      if (result.matchedCount === 0)
-        return res.status(404).json({
-          message: "Candidate not found",
-        });
-
-      const candidateList = await database
-        .collection<CandidateModel>(CollectionListNames.CANDIDATE)
-        .find({
-          voterId: new ObjectId(voterId),
-        })
-        .toArray();
-
-      return res.status(200).json({
-        message: "Successfully Updated Candidate",
-        candidateList: candidateList,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 export default candidateRouter;

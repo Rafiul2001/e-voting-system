@@ -63,7 +63,7 @@ export async function createCandidate(
   constituencyNumber: number,
   constituencyName: string,
   affiliation: string,
-  partyName: string | null
+  partyName: string
 ) {
   const candidateContract = await getCandidateContractAndGateway();
   try {
@@ -76,7 +76,7 @@ export async function createCandidate(
       String(constituencyNumber),
       constituencyName,
       affiliation,
-      String(partyName)
+      partyName
     );
     const candidateResponseObject = JSON.parse(response.toString("utf-8"));
     return candidateResponseObject;

@@ -19,6 +19,20 @@ export async function getAllElections() {
   }
 }
 
+export async function getElectionById(electionId: string) {
+  const electionContract = await getElectionContractAndGateway();
+  try {
+    const response = await electionContract.submitTransaction(
+      "getElectionById",
+      electionId
+    );
+    const electionResponseObject = JSON.parse(response.toString("utf-8"));
+    return electionResponseObject;
+  } catch (error) {
+    console.error(`Error in setup: ${error}`);
+  }
+}
+
 export async function initializeElection(
   electionId: string,
   electionName: string
