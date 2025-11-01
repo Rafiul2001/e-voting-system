@@ -1,14 +1,7 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { Context, Contract, Info, Transaction } from "fabric-contract-api";
 import { CandidateRecord } from "./record";
-// import { KeyEndorsementPolicy } from 'fabric-shim';
-// import * as crypto from "crypto";
 
 const electionCCName = "electioncc";
-const votePermitCCName = "voterpermitcc";
 const votingChannel = "votingchannel";
 
 @Info({
