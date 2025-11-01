@@ -1,112 +1,198 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { Context, Contract, Info, Transaction } from 'fabric-contract-api';
-import { PermitRecord, PermitStatus, VoterRecord } from './record';
-import { KeyEndorsementPolicy } from 'fabric-shim';
-import * as crypto from 'crypto';
+import { PermitRecord, PermitStatus } from './record';
 
-const PREFIX = {
-    VOTER: 'VOTER',    // VOTER#electionId#voterHash
-    PERMIT: 'PERMIT',  // PERMIT#electionId#permitHash
-};
-
-function sha256Hex(input: string): string {
-    return crypto.createHash('sha256').update(input).digest('hex');
-}
+const electionCCName = "electioncc";
+const votingChannel = "votingchannel";
 
 @Info({ title: 'VoterPermitContract', description: 'Voter Permit Smart Contract, using State Based Endorsement(SBE), implemented in TypeScript' })
 export class VoterPermitContract extends Contract {
 
     /**
       * IssuePermit
-      * - Client provides: electionId, voterHash (already hashed off-chain), permit (random string)
-      * - Writes:
-      *   - VOTER#electionId#voterHash -> { electionId, voterHash, issuedAt }
-      *   - PERMIT#electionId#permitHash (status=issued)
-      * - Throws if voter already has a permit for this election or permit already exists
       */
     @Transaction()
     public async IssuePermit(
-        ctx: Context, electionId: string, voterHash: string, permit: string
+        ctx: Context, permitKey: string, voterId: string, operatorId: string, electionId: string
     ): Promise<string> {
-        this._require(electionId && voterHash && permit, 'electionId, voterHash, and permit are required');
+        this._require(electionId && voterId && operatorId, 'electionId, voterId, and operatorId are required');
 
-        const voterKey = ctx.stub.createCompositeKey(PREFIX.VOTER, [electionId, voterHash]);
-        const voterBytes = await ctx.stub.getState(voterKey);
-        if (voterBytes && voterBytes.length) {
-            throw new Error('Permit already issued for this voter in this election');
+        try {
+            const electionString = await ctx.stub.invokeChaincode(
+                electionCCName,
+                ["getElectionById", electionId],
+                votingChannel
+            );
+
+            if (!electionString.payload || electionString.payload.length === 0) {
+                return JSON.stringify({
+                    message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
+                    data: null,
+                });
+            }
+
+            const payloadString = Buffer.from(electionString.payload).toString(
+                "utf8"
+            );
+            const electionResponse = await JSON.parse(payloadString);
+            const election = electionResponse.data;
+
+            if (election.status !== "started") {
+                return JSON.stringify({
+                    message: `The election with this ID ${electionId} is not in started mode!`,
+                    data: null,
+                });
+            };
+
+            const existingPermit = await this.getPermit(ctx, voterId, electionId) as PermitRecord
+
+            if (existingPermit) {
+                if (existingPermit.status === PermitStatus.ISSUED) {
+                    return JSON.stringify({
+                        message: "Permit is already issued!",
+                        data: null
+                    })
+                }
+
+                if (existingPermit.status === PermitStatus.SPENT) {
+                    return JSON.stringify({
+                        message: "Permit is already spent!",
+                        data: null
+                    })
+                }
+            }
+
+            const txTime = ctx.stub.getTxTimestamp();
+            const now = new Date(txTime.seconds.low * 1000).toISOString();
+
+            const newPermit: PermitRecord = {
+                permitKey: permitKey,
+                electionId: electionId,
+                issuedAt: now,
+                operatorId: operatorId,
+                status: PermitStatus.ISSUED,
+                voterId: voterId,
+                spentAt: ""
+            }
+
+            await ctx.stub.putState(newPermit.permitKey, Buffer.from(JSON.stringify(newPermit)))
+
+            return JSON.stringify({
+                message: `New permit is issued with voter ID: ${newPermit.voterId}`
+            })
+        } catch (error) {
+            return JSON.stringify({
+                message: `Internal server error: ${error}`,
+                data: null
+            })
         }
-
-        const permitHash = sha256Hex(permit);
-        const permitKey = ctx.stub.createCompositeKey(PREFIX.PERMIT, [electionId, permitHash]);
-        const permitBytes = await ctx.stub.getState(permitKey);
-        if (permitBytes && permitBytes.length) {
-            throw new Error('Permit already exists (hash collision / reuse)');
-        }
-
-        const now = new Date().toISOString();
-
-        const voterRec: VoterRecord = { electionId, voterHash, issuedAt: now };
-        const permitRec: PermitRecord = { electionId, permitHash, status: PermitStatus.ISSUED, issuedAt: now };
-
-        await ctx.stub.putState(voterKey, Buffer.from(JSON.stringify(voterRec)));
-        await ctx.stub.putState(permitKey, Buffer.from(JSON.stringify(permitRec)));
-
-        // Return permitHash so the client can keep only the hash if desired
-        return JSON.stringify({ permitHash });
     }
 
 
     /**
-   * HasVoted (aka has permit issued)
-   * - Returns true if a permit has already been issued to this voter for this election.
-   *   (You can treat "issued" as "has voted/used opportunity", since the permit can only be spent once.)
-   */
-
-    @Transaction()
-    public async HasVoted(
-        ctx: Context, electionId: string, voterHash: string
-    ): Promise<string> {
-        this._require(electionId && voterHash, 'electionId and voterHash are required');
-        const voterKey = ctx.stub.createCompositeKey(PREFIX.VOTER, [electionId, voterHash]);
-        const voterBytes = await ctx.stub.getState(voterKey);
-        return JSON.stringify({ has: !!(voterBytes && voterBytes.length) });
-    }
-
-    /**
-    * ValidateAndSpendPermit (INTERNAL - called by other chaincode)
-    * - Input: electionId, permitHash
-    * - Ensures the permit exists and is in 'issued' state, then marks it 'spent'.
-    * - Returns "OK" on success.
+    * SpendPermit 
     */
     @Transaction()
-    public async ValidateAndSpendPermit(
-        ctx: Context, electionId: string, permitHash: string
+    public async SpendPermit(
+        ctx: Context, permitKey: string, electionId: string
     ): Promise<string> {
-        this._require(electionId && permitHash, 'electionId and permitHash are required');
+        this._require(permitKey && electionId, 'permit key and election id are required');
 
-        const permitKey = ctx.stub.createCompositeKey(PREFIX.PERMIT, [electionId, permitHash]);
-        const permitBytes = await ctx.stub.getState(permitKey);
-        if (!permitBytes || !permitBytes.length) {
-            throw new Error('Permit not found');
+        try {
+            const electionString = await ctx.stub.invokeChaincode(
+                electionCCName,
+                ["getElectionById", electionId],
+                votingChannel
+            );
+
+            if (!electionString.payload || electionString.payload.length === 0) {
+                return JSON.stringify({
+                    message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
+                    data: null,
+                });
+            }
+
+            const payloadString = Buffer.from(electionString.payload).toString(
+                "utf8"
+            );
+            const electionResponse = await JSON.parse(payloadString);
+            const election = electionResponse.data;
+
+            if (election.status !== "started") {
+                return JSON.stringify({
+                    message: `The election with this ID ${electionId} is not in started mode!`,
+                    data: null,
+                });
+            };
+
+            const permitBytes = await ctx.stub.getState(permitKey);
+            if (permitBytes.length === 0) {
+                return JSON.stringify({
+                    message: "Permit not found",
+                    data: null
+                });
+            }
+            const permitObject = JSON.parse(permitBytes.toString()) as PermitRecord;
+
+            if (permitObject.status === PermitStatus.SPENT) {
+                return JSON.stringify({
+                    message: "Permit is already spent!",
+                    data: null
+                })
+            }
+
+            permitObject.status = PermitStatus.SPENT
+            const txTime = ctx.stub.getTxTimestamp();
+            const now = new Date(txTime.seconds.low * 1000).toISOString();
+            permitObject.spentAt = now;
+
+            await ctx.stub.putState(permitKey, Buffer.from(JSON.stringify(permitObject)))
+
+            return JSON.stringify({
+                message: "Permit has been spent!",
+                data: permitObject
+            });
+
+        } catch (error) {
+            return JSON.stringify({
+                message: `Internal server error: ${error}`,
+                data: null
+            });
         }
-
-        const rec = JSON.parse(permitBytes.toString()) as PermitRecord;
-        if (rec.status !== 'issued') {
-            throw new Error('Permit already spent or invalid');
-        }
-
-        rec.status = PermitStatus.SPENT;
-        rec.spentAt = new Date().toISOString();
-        await ctx.stub.putState(permitKey, Buffer.from(JSON.stringify(rec)));
-
-        return 'OK';
     }
 
     // Utility guard
     private _require(cond: any, msg: string): void {
         if (!cond) throw new Error(msg);
+    }
+
+    @Transaction(false)
+    public async getPermit(
+        ctx: Context,
+        voterId: string,
+        electionId: string
+    ): Promise<any | null> {
+        // Build CouchDB rich query
+        const queryString = {
+            selector: {
+                voterId: voterId,
+                electionId: electionId,
+            },
+        };
+
+        // Execute the query
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(queryString));
+        const result = await iterator.next();
+
+        let permit = null;
+
+        if (!result.done && result.value) {
+            // Parse the record into JSON
+            permit = JSON.parse(result.value.value.toString());
+        }
+
+        await iterator.close();
+
+        // Return the permit object if found, else null
+        return permit;
     }
 }

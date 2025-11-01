@@ -11,28 +11,23 @@ export const PermitStatus = {
 
 export type TPermitStatus = typeof PermitStatus[keyof typeof PermitStatus]
 
-@Object()
-export class VoterRecord {
-    @Property()
-    public electionId: string = '';
-
-    @Property()
-    public voterHash: string = '';
-
-    @Property()
-    public issuedAt: string = '';
-}
 
 @Object()
 export class PermitRecord {
     @Property()
+    public permitKey: string = '';
+
+    @Property()
     public electionId: string = '';
 
     @Property()
-    public permitHash: string = '';
+    public voterId: string = '';
 
     @Property()
     public status: TPermitStatus = PermitStatus.ISSUED;
+
+    @Property()
+    public operatorId: string = '';
 
     @Property()
     public issuedAt: string = '';
