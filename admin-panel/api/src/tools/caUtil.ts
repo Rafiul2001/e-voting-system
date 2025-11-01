@@ -1,7 +1,5 @@
+import FabricCAServices from "fabric-ca-client";
 import { Wallet } from "fabric-network";
-
-const adminUserId = "admin";
-const adminUserPasswd = "adminpw";
 
 export const buildCAClient = (
   FabricCAServices: typeof import("fabric-ca-client"),
@@ -22,11 +20,11 @@ export const buildCAClient = (
 };
 
 export const enrollAdmin = async (
-  caClient: {
-    enroll: (arg0: { enrollmentID: string; enrollmentSecret: string }) => any;
-  },
+  caClient: FabricCAServices,
   wallet: Wallet,
-  orgMspId: string
+  orgMspId: string,
+  adminUserId: string,
+  adminUserPassword: string
 ) => {
   try {
     // Check to see if we've already enrolled the admin user.
@@ -41,8 +39,82 @@ export const enrollAdmin = async (
     // Enroll the admin user, and import the new identity into the wallet.
     const enrollment = await caClient.enroll({
       enrollmentID: adminUserId,
-      enrollmentSecret: adminUserPasswd,
+      enrollmentSecret: adminUserPassword,
     });
+
+    const x509Identity = {
+      credentials: {
+        certificate: enrollment.certificate,
+        privateKey: enrollment.key.toBytes(),
+      },
+      mspId: orgMspId,
+      type: "X.509",
+    };
+    await wallet.put(adminUserId, x509Identity);
+    console.log(
+      "Successfully enrolled admin user and imported it into the wallet"
+    );
+  } catch (error) {
+    console.error(`Failed to enroll admin user : ${error}`);
+  }
+};
+
+export const enrollNewAdmin = async (
+  caClient: FabricCAServices,
+  wallet: Wallet,
+  orgMspId: string,
+  adminUserId: string,
+  adminUserPassword: string,
+  bootstrapAdminId: string
+) => {
+  try {
+    // Check to see if we've already enrolled the admin user.
+    const identity = await wallet.get(adminUserId);
+    if (identity) {
+      console.log(
+        "An identity for the admin user already exists in the wallet"
+      );
+      return;
+    }
+
+    const identityForBootstrapAdmin = await wallet.get(bootstrapAdminId);
+    if (!identityForBootstrapAdmin) {
+      console.log(
+        "An identity for the bootstrapAdmin already exists in the wallet"
+      );
+      return;
+    }
+
+    // build a user object for authenticating with the CA
+    const provider = wallet
+      .getProviderRegistry()
+      .getProvider(identityForBootstrapAdmin.type);
+    const bootstrapAdminUser = await provider.getUserContext(identityForBootstrapAdmin, bootstrapAdminId);
+
+    const secret = await caClient.register(
+      {
+        affiliation: "",
+        enrollmentID: adminUserId,
+        enrollmentSecret: adminUserPassword,
+        role: "admin",
+        attrs: [
+          { name: 'hf.Registrar.Roles', value: '*', ecert: true },
+          { name: 'hf.Registrar.Attributes', value: '*', ecert: true },
+          { name: 'hf.Revoker', value: 'true', ecert: true },
+          { name: 'hf.GenCRL', value: 'true', ecert: true },
+          { name: 'admin', value: 'true', ecert: true },
+        ]
+      },
+      bootstrapAdminUser
+    );
+    console.log(secret)
+
+    // Enroll the admin user, and import the new identity into the wallet.
+    const enrollment = await caClient.enroll({
+      enrollmentID: adminUserId,
+      enrollmentSecret: secret,
+    });
+
     const x509Identity = {
       credentials: {
         certificate: enrollment.certificate,
@@ -61,17 +133,13 @@ export const enrollAdmin = async (
 };
 
 export const registerAndEnrollUser = async (
-  caClient: {
-    register: (
-      arg0: { affiliation: any; enrollmentID: any; role: string },
-      arg1: any
-    ) => any;
-    enroll: (arg0: { enrollmentID: any; enrollmentSecret: any }) => any;
-  },
+  caClient: FabricCAServices,
   wallet: Wallet,
   orgMspId: string,
   userId: string,
-  affiliation: string
+  userPassword: string,
+  affiliation: string,
+  adminUserId: string
 ) => {
   try {
     // Check to see if we've already enrolled the user
@@ -105,6 +173,7 @@ export const registerAndEnrollUser = async (
       {
         affiliation: affiliation,
         enrollmentID: userId,
+        enrollmentSecret: userPassword,
         role: "client",
       },
       adminUser

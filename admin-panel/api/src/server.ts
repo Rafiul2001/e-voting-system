@@ -5,6 +5,6 @@ import { initiallyEnrollAdminAndConnectGateway } from "./networkConnection/netwo
 
 app.listen(config.port, async () => {
   await connectToDatabase();
-  await initiallyEnrollAdminAndConnectGateway();
+  await initiallyEnrollAdminAndConnectGateway("admin", "adminpw");
   console.log(`Server running on port http://localhost:${config.port}`);
 });
