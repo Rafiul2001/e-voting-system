@@ -19,7 +19,7 @@ interface IConfig {
 const config: IConfig = {
   port: Number(process.env.PORT) || 3000,
   mongodbUrl: process.env.MONGODB_URL || "mongodb://localhost:27017/",
-  databaseName: process.env.DATABASE_NAME || "adminPanel",
+  databaseName: process.env.DATABASE_NAME || "electionCommissionAdminPanel",
   collectionList: [
     CollectionListNames.ADMIN,
     CollectionListNames.CONSTITUENCY,

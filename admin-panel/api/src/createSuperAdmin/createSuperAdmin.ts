@@ -1,6 +1,7 @@
 import { CollectionListNames } from "../config/config";
 import { AdminModel } from "../models/adminModel";
 import { database } from "../mongodb_connection/connection";
+import { createUser } from "../networkConnection/networkConnection";
 import { encryptPassword } from "../tools/passwordEncrypter";
 
 // Read input from command line
@@ -20,11 +21,10 @@ async function main() {
           async (password: string) => {
             // Check if admin already exists
             const existingAdmin = await database
-              .collection<AdminModel>(CollectionListNames.ADMIN)
-              .findOne({ userName });
+              .collection<AdminModel>(CollectionListNames.ADMIN).findOne({ userName })
 
             if (existingAdmin) {
-              console.log("Admin with this username already exists!");
+              console.log("Already Created!");
               rl.close();
               process.exit(0);
             }
@@ -39,10 +39,13 @@ async function main() {
               password: hashedPassword,
             };
 
+            await createUser(newAdmin.userName, newAdmin.password, "admin")
+
             // Insert into DB
             const result = await database
               .collection<AdminModel>(CollectionListNames.ADMIN)
               .insertOne(newAdmin);
+
 
             console.log(
               "Super admin created successfully! Admin ID:",
