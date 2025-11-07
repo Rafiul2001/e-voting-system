@@ -1,7 +1,12 @@
 import { Contract, Gateway, Wallet, Wallets } from "fabric-network";
 import FabricCAServices from "fabric-ca-client";
 import path from "path";
-import { buildCAClient, enrollAdmin, enrollNewAdmin, registerAndEnrollUser } from "../tools/caUtil";
+import {
+  buildCAClient,
+  enrollAdmin,
+  enrollNewAdmin,
+  registerAndEnrollUser,
+} from "../tools/caUtil";
 import { buildCCPOrg, buildWallet } from "../tools/appUtil";
 
 const channelName = "votingchannel";
@@ -70,7 +75,11 @@ export async function initiallyEnrollAdminAndConnectGateway(
   }
 }
 
-export async function createNewAdmin(adminUserId: string, adminUserPassword: string, bootstrapAdminId: string) {
+export async function createNewAdmin(
+  adminUserId: string,
+  adminUserPassword: string,
+  bootstrapAdminId: string
+) {
   const walletDistrictCommission = await buildWallet(
     Wallets,
     walletPathDistrictCommission
@@ -86,14 +95,70 @@ export async function createNewAdmin(adminUserId: string, adminUserPassword: str
   );
 }
 
-export async function createUser(userId: string, userPassword: string, adminUserId: string) {
-  console.log("Register and enroll a new User:")
+export async function createUser(
+  userId: string,
+  userPassword: string,
+  adminUserId: string
+) {
+  console.log("Register and enroll a new User:");
   const walletDistrictCommission = await buildWallet(
     Wallets,
     walletPathDistrictCommission
   );
 
-  await registerAndEnrollUser(caDistrictCommissionClient, walletDistrictCommission, districtCommissionOrg, userId, userPassword, '', adminUserId)
+  try {
+    await registerAndEnrollUser(
+      caDistrictCommissionClient,
+      walletDistrictCommission,
+      districtCommissionOrg,
+      userId,
+      userPassword,
+      "",
+      adminUserId
+    );
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function revokeUser(userId: string, adminUserId: string) {
+  console.log(`Revoking user: ${userId}`);
+  const walletDistrictCommission = await buildWallet(
+    Wallets,
+    walletPathDistrictCommission
+  );
+
+  const adminIdentity = await walletDistrictCommission.get(adminUserId);
+  if (!adminIdentity) {
+    console.log(`Admin identity ${adminUserId} not found`);
+    return;
+  }
+
+  const userIdentity = await walletDistrictCommission.get(userId);
+  if (!userIdentity) {
+    console.log(`User identity ${userId} not found`);
+    return;
+  }
+
+  try {
+    const provider = walletDistrictCommission
+      .getProviderRegistry()
+      .getProvider(adminIdentity.type);
+    const adminUser = await provider.getUserContext(adminIdentity, adminUserId);
+
+    // Revoke identity in CA
+    await caDistrictCommissionClient.revoke(
+      {
+        enrollmentID: userId,
+        reason: "cessationOfOperation",
+      },
+      adminUser
+    );
+
+    console.log(`✅ Successfully revooked user: ${userId}`);
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 export async function getVoterPermitContractAndGateway() {

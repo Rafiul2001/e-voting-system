@@ -8,8 +8,6 @@ import { matchPassword } from "../tools/passwordEncrypter";
 
 const authRouter = Router();
 
-// Admin can create, update, delete machines, get tallies
-
 // Login route
 authRouter.post(
   "/login",

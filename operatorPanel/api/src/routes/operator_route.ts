@@ -1,164 +1,132 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { verifyToken } from "../middlewares/verifyToken";
+import { createUser, revokeUser } from "../networkConnection/networkConnection";
+import { database } from "../mongodb_connection/connection";
+import { CollectionListNames } from "../config/config";
+import { OperatorModel } from "../models/operatorModel";
 
 const operatorRouter = Router();
 
-// Operator can Issue Permit, Get Permit
-
-// // Get all candidates by election ID
-// candidateRouter.get(
-//   "/get-all/:electionId",
+// Get All Operators
+operatorRouter.get(
+  "/get-all",
 //   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const { electionId } = req.params;
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const operatorArray = await database
+        .collection<OperatorModel>(CollectionListNames.OPERATOR)
+        .find()
+        .toArray();
 
-//       const candidateList = await getAllCandidatesByElectionId(electionId);
+      return res.json({
+        message: "Successfully get all the operators",
+        data: operatorArray,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-//       return res.json({
-//         message: "Successfully get all candidate",
-//         candidateList: candidateList,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
+// Create Operator
+operatorRouter.post(
+  "/create",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { operatorId, operatorPassowrd } = req.body;
 
-// // Get all candidates by constituency number and name
-// candidateRouter.get(
-//   "/get-all/:constituencyNumber/:constituencyName",
-//   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const { constituencyNumber, constituencyName } = req.params;
+      const existingOperator = await database
+        .collection<OperatorModel>(CollectionListNames.OPERATOR)
+        .findOne({ operatorId: operatorId });
 
-//       const candidateList = await getAllCandidatesByConstituencyNumber(
-//         constituencyName,
-//         Number(constituencyNumber)
-//       );
+      if (existingOperator) {
+        if (existingOperator.isRevoked)
+          return res.json({
+            message: "This user is revoked!",
+            data: null,
+          });
+        else
+          return res.json({
+            message: "Operator Already Exists!",
+            data: null,
+          });
+      }
 
-//       return res.json({
-//         message: "Successfully get all candidate",
-//         candidateList: candidateList,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
+      const newOperator: OperatorModel = {
+        operatorId: operatorId,
+        operatorPassword: operatorPassowrd,
+        isRevoked: false,
+      };
 
-// // Create new candidate
-// candidateRouter.post(
-//   "/create",
-//   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const {
-//         candidateName,
-//         voterId,
-//         electionId,
-//         constituencyNumber,
-//         constituencyName,
-//         affiliation,
-//         partyName,
-//       } = req.body;
+      await createUser(
+        newOperator.operatorId,
+        newOperator.operatorPassword,
+        "admin"
+      );
 
-//       const candidateId = crypto.randomUUID();
+      await database
+        .collection<OperatorModel>(CollectionListNames.OPERATOR)
+        .insertOne(newOperator);
 
-//       const response = await createCandidate(
-//         candidateId,
-//         candidateName,
-//         voterId,
-//         electionId,
-//         constituencyNumber,
-//         constituencyName,
-//         affiliation,
-//         partyName
-//       );
+      return res.json({
+        message: "Successfully created operator",
+        data: newOperator,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-//       console.log(response.message);
+// Revoke Operator
+operatorRouter.post(
+  "/revoke",
+  verifyToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { operatorId } = req.body;
 
-//       return res.status(200).json({
-//         message: response.message,
-//         candidate: response.data,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
+      const existingOperator = await database
+        .collection<OperatorModel>(CollectionListNames.OPERATOR)
+        .findOne({ operatorId: operatorId });
 
-// // Add constituency
-// candidateRouter.put(
-//   "/:electionId/:candidateId/addConstituency",
-//   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const { electionId, candidateId } = req.params;
-//       const { constituencyNumber, constituencyName } = req.body;
+      if (existingOperator) {
+        if (existingOperator.isRevoked)
+          return res.json({
+            message: "This operator is already revoked!",
+            data: null,
+          });
+        else {
+          await revokeUser(operatorId, "admin");
 
-//       const response = await addConstituency(
-//         candidateId,
-//         electionId,
-//         constituencyNumber,
-//         constituencyName
-//       );
+          const returnedDocument = await database
+            .collection<OperatorModel>(CollectionListNames.OPERATOR)
+            .findOneAndUpdate(
+              { operatorId: operatorId },
+              {
+                $set: {
+                  isRevoked: true,
+                },
+              },
+              { returnDocument: "after" }
+            );
 
-//       return res.status(200).json({
-//         message: response.message,
-//         candidate: response.data,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
-
-// // Remove constituency
-// candidateRouter.put(
-//   "/:electionId/:candidateId/removeConstituency",
-//   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const { electionId, candidateId } = req.params;
-//       const { constituencyNumber, constituencyName } = req.body;
-
-//       const response = await removeConstituency(
-//         candidateId,
-//         electionId,
-//         constituencyNumber,
-//         constituencyName
-//       );
-
-//       return res.status(200).json({
-//         message: response.message,
-//         candidate: response.data,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
-
-// // Delete Candidate
-// candidateRouter.delete(
-//   "/delete/:candidateId/:electionId",
-//   verifyToken,
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const { candidateId, electionId } = req.params;
-
-//       const response = await deleteCandidate(candidateId, electionId);
-
-//       return res.status(200).json({
-//         message: response.message,
-//         candidate: response.data,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
+          return res.json({
+            message: "Successfully revoked operator",
+            data: returnedDocument,
+          });
+        }
+      } else {
+        return res.json({
+          message: "Operator not found!",
+          data: null,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default operatorRouter;

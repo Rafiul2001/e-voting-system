@@ -89,7 +89,10 @@ export const enrollNewAdmin = async (
     const provider = wallet
       .getProviderRegistry()
       .getProvider(identityForBootstrapAdmin.type);
-    const bootstrapAdminUser = await provider.getUserContext(identityForBootstrapAdmin, bootstrapAdminId);
+    const bootstrapAdminUser = await provider.getUserContext(
+      identityForBootstrapAdmin,
+      bootstrapAdminId
+    );
 
     const secret = await caClient.register(
       {
@@ -98,16 +101,16 @@ export const enrollNewAdmin = async (
         enrollmentSecret: adminUserPassword,
         role: "admin",
         attrs: [
-          { name: 'hf.Registrar.Roles', value: '*', ecert: true },
-          { name: 'hf.Registrar.Attributes', value: '*', ecert: true },
-          { name: 'hf.Revoker', value: 'true', ecert: true },
-          { name: 'hf.GenCRL', value: 'true', ecert: true },
-          { name: 'admin', value: 'true', ecert: true },
-        ]
+          { name: "hf.Registrar.Roles", value: "*", ecert: true },
+          { name: "hf.Registrar.Attributes", value: "*", ecert: true },
+          { name: "hf.Revoker", value: "true", ecert: true },
+          { name: "hf.GenCRL", value: "true", ecert: true },
+          { name: "admin", value: "true", ecert: true },
+        ],
       },
       bootstrapAdminUser
     );
-    console.log(secret)
+    console.log(secret);
 
     // Enroll the admin user, and import the new identity into the wallet.
     const enrollment = await caClient.enroll({

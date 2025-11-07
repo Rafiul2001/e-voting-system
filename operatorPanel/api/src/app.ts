@@ -47,7 +47,7 @@ app.use("/uploads/user_images", express.static("uploads/user_images"));
 
 //Routes
 app.use(`${apiV1}/auth`, authRouter);
-app.use(`${apiV1}/opertor`, operatorRouter);
+app.use(`${apiV1}/operator`, operatorRouter);
 app.use(`${apiV1}/machine`, machineRouter);
 app.use(`${apiV1}/vote`, voteRouter);
 app.use(`${apiV1}/permit`, permitRouter);
