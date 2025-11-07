@@ -7,12 +7,14 @@ import { TallyRecord } from "./tallyRecord";
 import * as crypto from "crypto";
 
 const electionCCName = "electioncc";
-const votePermitCCName = "voterpermitcc";
+const voterPermitCCName = "voterpermitcc";
 const votingChannel = "votingchannel";
 
-const PREFIX = {
-  TALLY: "TALLY", // TALLY#electionId#constituencyId#candidateId
-};
+// const PREFIX = {
+//   TALLY: "TALLY", // TALLY#electionId#constituencyId#candidateId
+// };
+
+const objectType = "voteTally";
 
 function sha256Hex(s: string): string {
   return crypto.createHash("sha256").update(s).digest("hex");
@@ -28,111 +30,199 @@ export class VoteTallyContract extends Contract {
   @Transaction()
   public async CastVote(
     ctx: Context,
-    electionId: string,
-    constituencyId: string,
     candidateId: string,
-    permit: string
-  ): Promise<string> {
-    this._require(
-      electionId && constituencyId && candidateId && permit,
-      "electionId, constituencyId, candidateId, and permit are required"
-    );
-
-    const isElectionStarted = await ctx.stub.invokeChaincode(
-      electionCCName,
-      ["isStarted", electionId],
-      votingChannel
-    );
-
-    if (!isElectionStarted) {
-      return "Election is not started or is finished!";
-    }
-
-    const permitHash = sha256Hex(permit);
-    const resp = await ctx.stub.invokeChaincode(
-      votePermitCCName,
-      ["ValidateAndSpendPermit", electionId, permitHash],
-      votingChannel
-    );
-
-    if (resp.status !== 200) {
-      throw new Error(
-        `ValidateAndSpendPermit failed: status ${resp.status}, message: ${resp.message}`
-      );
-    }
-
-    // Get the transaction timestamp (deterministic across peers)
-    const txTimestamp = ctx.stub.getTxTimestamp();
-    const updatedAt = new Date(txTimestamp.seconds.low * 1000).toISOString();
-
-    const tallyKey = ctx.stub.createCompositeKey(PREFIX.TALLY, [
-      electionId,
-      constituencyId,
-      candidateId,
-    ]);
-    const currentBytes = await ctx.stub.getState(tallyKey);
-
-    let rec: TallyRecord;
-    // const now = new Date().toISOString();
-
-    if (!currentBytes || !currentBytes.length) {
-      rec = {
-        electionId,
-        constituencyId,
-        candidateId,
-        voteCount: 1,
-        updatedAt: updatedAt,
-      };
-    } else {
-      rec = JSON.parse(currentBytes.toString()) as TallyRecord;
-      rec.voteCount += 1;
-      rec.updatedAt = updatedAt;
-    }
-
-    await ctx.stub.putState(tallyKey, Buffer.from(JSON.stringify(rec)));
-
-    return JSON.stringify({ ok: true, tally: rec.voteCount });
-  }
-
-  // Get tally for a specific candidate in a constituency
-  @Transaction(false)
-  public async GetCandidateTally(
-    ctx: Context,
     electionId: string,
-    constituencyId: string,
-    candidateId: string
+    constituencyNumber: string,
+    constituencyName: string,
+    permitKey: string
   ): Promise<string> {
     this._require(
-      electionId && constituencyId && candidateId,
-      "missing inputs"
+      candidateId &&
+        electionId &&
+        constituencyNumber &&
+        constituencyName &&
+        permitKey,
+      "candidateId, electionId, constituencyNumber, constituencyName and permitKey are required"
     );
 
-    const isAlreadyFinished = await ctx.stub.invokeChaincode(
-      electionCCName,
-      ["checkAlreadyFinished", electionId],
-      votingChannel
-    );
+    try {
+      // Checking election status
+      const electionString = await ctx.stub.invokeChaincode(
+        electionCCName,
+        ["getElectionById", electionId],
+        votingChannel
+      );
 
-    if (!isAlreadyFinished) {
-      return "Election is not finished yet!";
-    }
+      if (!electionString.payload || electionString.payload.length === 0) {
+        return JSON.stringify({
+          message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
+          data: null,
+        });
+      }
 
-    const key = ctx.stub.createCompositeKey(PREFIX.TALLY, [
-      electionId,
-      constituencyId,
-      candidateId,
-    ]);
-    const bytes = await ctx.stub.getState(key);
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
 
-    if (!bytes || !bytes.length) {
-      return JSON.stringify({
-        electionId,
-        constituencyId,
+      if (election.status !== "started") {
+        return JSON.stringify({
+          message: `The election with this ID ${electionId} is not in started mode!`,
+          data: null,
+        });
+      }
+
+      // Spend the permit.
+      const permitObjectString = await ctx.stub.invokeChaincode(
+        voterPermitCCName,
+        ["SpendPermit", permitKey, electionId],
+        votingChannel
+      );
+
+      if (
+        !permitObjectString.payload ||
+        permitObjectString.payload.length === 0
+      ) {
+        return JSON.stringify({
+          message: `Permit not found with permit Key: ${permitKey}, ${permitObjectString.message}, ${permitObjectString.status}`,
+          data: null,
+        });
+      }
+
+      const permitPayloadString = Buffer.from(
+        permitObjectString.payload
+      ).toString("utf8");
+      const permitResponse = await JSON.parse(permitPayloadString);
+      const permit = permitResponse.data;
+
+      if (!permit.data) {
+        return JSON.stringify({
+          message: permit.message,
+          data: null,
+        });
+      }
+
+      // Cast vote
+      // Create composite key
+      const compositeTallyKey = ctx.stub.createCompositeKey(objectType, [
         candidateId,
-        voteCount: 0,
+        electionId,
+        constituencyNumber,
+        constituencyNumber,
+      ]);
+
+      // Check if a tally exists or not!
+      const existingTallyString = await this.GetTally(
+        ctx,
+        candidateId,
+        constituencyNumber,
+        constituencyName,
+        electionId
+      );
+
+      const existingTally = JSON.parse(existingTallyString) as {
+        message: string;
+        data: TallyRecord | null;
+      };
+
+      const txTime = ctx.stub.getTxTimestamp();
+      const now = new Date(txTime.seconds.low * 1000).toISOString();
+
+      if (existingTally.data) {
+        existingTally.data.voteCount += 1;
+        existingTally.data.updatedAt = now;
+
+        await ctx.stub.putState(
+          compositeTallyKey,
+          Buffer.from(JSON.stringify(existingTally.data))
+        );
+
+        return JSON.stringify({
+          message: "Successfully updated vote tally!",
+          data: existingTally.data,
+        });
+      } else {
+        const newTally: TallyRecord = {
+          tallyKey: compositeTallyKey,
+          candidateId: candidateId,
+          constituencyName: constituencyName,
+          constituencyNumber: Number(constituencyNumber),
+          electionId: electionId,
+          voteCount: 1,
+          createdAt: now,
+          updatedAt: "",
+        };
+        await ctx.stub.putState(
+          compositeTallyKey,
+          Buffer.from(JSON.stringify(newTally))
+        );
+        return JSON.stringify({
+          message: "Successfully initialize new vote Talley",
+          data: newTally,
+        });
+      }
+    } catch (error) {
+      return JSON.stringify({
+        message: `Internal Server Error: ${error}`,
+        data: null,
       });
     }
-    return bytes.toString();
+  }
+
+  /*
+   * Get tally for specific candidate
+   */
+
+  @Transaction(false)
+  public async GetTally(
+    ctx: Context,
+    candidateId: string,
+    constituencyNumber: string,
+    constituencyName: string,
+    electionId: string
+  ): Promise<string> {
+    this._require(
+      candidateId && constituencyName && constituencyNumber && electionId,
+      "candidateId, constituencyName, constituencyNumber and electionId are required!"
+    );
+
+    try {
+      let tally = null;
+      // Execute the query
+      const existingTallyIterator =
+        await ctx.stub.getStateByPartialCompositeKey(objectType, [
+          candidateId,
+          constituencyName,
+          constituencyNumber,
+          electionId,
+        ]);
+
+      const result = await existingTallyIterator.next();
+
+      if (!result.done && result.value) {
+        // Parse the record into JSON
+        tally = JSON.parse(result.value.value.toString());
+      }
+
+      await existingTallyIterator.close();
+
+      if (tally)
+        return JSON.stringify({
+          message: "Permit Found!",
+          data: tally,
+        });
+      else
+        return JSON.stringify({
+          message: "Permit not found!",
+          data: null,
+        });
+    } catch (error) {
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
+    }
   }
 
   // Get all tallies for a constituency (returns an array)
@@ -140,27 +230,49 @@ export class VoteTallyContract extends Contract {
   public async GetConstituencyTallies(
     ctx: Context,
     electionId: string,
-    constituencyId: string
+    constituencyNumber: string,
+    constituencyName: string
   ): Promise<string> {
-    this._require(electionId && constituencyId, "missing inputs");
-
-    const isAlreadyFinished = await ctx.stub.invokeChaincode(
-      electionCCName,
-      ["checkAlreadyFinished", electionId],
-      votingChannel
+    this._require(
+      electionId && constituencyNumber && constituencyName,
+      "missing inputs"
     );
-
-    if (!isAlreadyFinished) {
-      return "Election is not finished yet!";
-    }
-
-    const iter = await ctx.stub.getStateByPartialCompositeKey(PREFIX.TALLY, [
-      electionId,
-      constituencyId,
-    ]);
-    const results: TallyRecord[] = [];
-
     try {
+      // Checking election status
+      const electionString = await ctx.stub.invokeChaincode(
+        electionCCName,
+        ["getElectionById", electionId],
+        votingChannel
+      );
+
+      if (!electionString.payload || electionString.payload.length === 0) {
+        return JSON.stringify({
+          message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
+          data: null,
+        });
+      }
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status !== "finished") {
+        return JSON.stringify({
+          message: `The election with this ID ${electionId} is not finished yet!`,
+          data: null,
+        });
+      }
+
+      const iter = await ctx.stub.getStateByPartialCompositeKey(objectType, [
+        electionId,
+        constituencyNumber,
+        constituencyName,
+      ]);
+
+      const results: TallyRecord[] = [];
+
       while (true) {
         const res = await iter.next();
 
@@ -174,11 +286,17 @@ export class VoteTallyContract extends Contract {
           break;
         }
       }
-    } finally {
-      await iter.close(); // make sure it's always closed
-    }
 
-    return JSON.stringify(results);
+      return JSON.stringify({
+        message: "Successfully get the list!",
+        data: results,
+      });
+    } catch (error) {
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
+    }
   }
 
   // Get all tallies for an election (across all constituency)
@@ -188,28 +306,45 @@ export class VoteTallyContract extends Contract {
     electionId: string
   ): Promise<string> {
     this._require(electionId, "missing electionId");
-
-    const isAlreadyFinished = await ctx.stub.invokeChaincode(
-      electionCCName,
-      ["checkAlreadyFinished", electionId],
-      votingChannel
-    );
-
-    if (!isAlreadyFinished) {
-      return "Election is not finished yet!";
-    }
-
-    const iter = await ctx.stub.getStateByPartialCompositeKey(PREFIX.TALLY, [
-      electionId,
-    ]);
-    const results: TallyRecord[] = [];
     try {
+      // Checking election status
+      const electionString = await ctx.stub.invokeChaincode(
+        electionCCName,
+        ["getElectionById", electionId],
+        votingChannel
+      );
+
+      if (!electionString.payload || electionString.payload.length === 0) {
+        return JSON.stringify({
+          message: `Election not found with id: ${electionId}, ${electionString.message}, ${electionString.status}`,
+          data: null,
+        });
+      }
+
+      const payloadString = Buffer.from(electionString.payload).toString(
+        "utf8"
+      );
+      const electionResponse = await JSON.parse(payloadString);
+      const election = electionResponse.data;
+
+      if (election.status !== "finished") {
+        return JSON.stringify({
+          message: `The election with this ID ${electionId} is not finished yet!`,
+          data: null,
+        });
+      }
+
+      const iter = await ctx.stub.getStateByPartialCompositeKey(objectType, [
+        electionId,
+      ]);
+
+      let count = 0;
+
       while (true) {
         const res = await iter.next();
 
         if (res.value && res.value.value) {
-          const record = JSON.parse(res.value.value.toString()) as TallyRecord;
-          results.push(record);
+          count += 1;
         }
 
         if (res.done) {
@@ -217,11 +352,17 @@ export class VoteTallyContract extends Contract {
           break;
         }
       }
-    } finally {
-      await iter.close(); // make sure it's always closed
-    }
 
-    return JSON.stringify(results);
+      return JSON.stringify({
+        message: "Successfully get the count!",
+        data: count,
+      });
+    } catch (error) {
+      return JSON.stringify({
+        message: `Internal server error: ${error}`,
+        data: null,
+      });
+    }
   }
 
   private _require(cond: any, msg: string) {
