@@ -1,11 +1,40 @@
 import express from "express";
 import cors from "cors";
-import adminRouter from "./routes/admin_route";
 import { errorHandler } from "./middlewares/errorHandler";
-import voterRouter from "./routes/voter_route";
-import candidateRouter from "./routes/candidate_route";
-import electionRouter from "./routes/election_route";
-import constituencyRouter from "./routes/constituency_route";
+import operatorRouter from "./routes/operator_route";
+import machineRouter from "./routes/machine_route";
+import voteRouter from "./routes/vote_router";
+import permitRouter from "./routes/permit_router";
+import authRouter from "./routes/auth_router";
+
+/*
+ * 1. Auth router
+ *       Role based login (Admin, Operator, Machine)
+ */
+
+/*
+ * 2. Machine router
+ *       Create Machine,
+ *       Delete Machine,
+ */
+
+/*
+ * 3. Operator router
+ *       Create Operator,
+ *       Delete Operator,
+ */
+
+/*
+ * 4. Permit router
+ *       Issue Permit,
+ *       Get Permit,
+ */
+
+/*
+ * 5. Vote router
+ *       Cast Vote,
+ *       Get Tallies,
+ */
 
 const apiV1 = "/api/v1";
 
@@ -17,11 +46,11 @@ app.use(cors());
 app.use("/uploads/user_images", express.static("uploads/user_images"));
 
 //Routes
-app.use(`${apiV1}/admin`, adminRouter);
-app.use(`${apiV1}/voter`, voterRouter);
-app.use(`${apiV1}/candidate`, candidateRouter);
-app.use(`${apiV1}/election`, electionRouter);
-app.use(`${apiV1}/constituency`, constituencyRouter);
+app.use(`${apiV1}/auth`, authRouter);
+app.use(`${apiV1}/opertor`, operatorRouter);
+app.use(`${apiV1}/machine`, machineRouter);
+app.use(`${apiV1}/vote`, voteRouter);
+app.use(`${apiV1}/permit`, permitRouter);
 
 app.use(errorHandler);
 

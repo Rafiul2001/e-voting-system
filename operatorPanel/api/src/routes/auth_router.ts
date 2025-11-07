@@ -6,10 +6,12 @@ import config, { CollectionListNames } from "../config/config";
 import jwt from "jsonwebtoken";
 import { matchPassword } from "../tools/passwordEncrypter";
 
-const adminRouter = Router();
+const authRouter = Router();
+
+// Admin can create, update, delete machines, get tallies
 
 // Login route
-adminRouter.post(
+authRouter.post(
   "/login",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -50,4 +52,4 @@ adminRouter.post(
   }
 );
 
-export default adminRouter;
+export default authRouter;
