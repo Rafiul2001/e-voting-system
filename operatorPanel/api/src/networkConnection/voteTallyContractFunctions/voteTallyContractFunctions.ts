@@ -1,144 +1,103 @@
 import { getVoteTallyContractAndGateway } from "../networkConnection";
 
-type TCandidateConstituency = {
-  constituencyName: string;
-  constituencyNumber: number;
-};
-
-type TCandidateAffiliationType = {
-  affiliation: string;
-  partyName: string | null;
-};
-
-type TCandidateRecord = {
+type TTallyRecord = {
+  tallyKey: string;
   candidateId: string;
-  candidateName: string;
-  voterId: string;
   electionId: string;
-  constituency: TCandidateConstituency[];
-  affiliationType: TCandidateAffiliationType;
+  constituencyNumber: number;
+  constituencyName: string;
+  voteCount: number;
   createdAt: string;
   updatedAt: string;
 };
 
-export async function getAllCandidatesByElectionId(electionId: string) {
-  const candidateContract = await getVoteTallyContractAndGateway();
-  try {
-    const response = await candidateContract.submitTransaction(
-      "getAllCandidatesByElectionId",
-      electionId
-    );
-    const candidateResponseObjectArray = JSON.parse(response.toString("utf-8"))
-      .data as TCandidateRecord[];
-    return candidateResponseObjectArray;
-  } catch (error) {
-    console.error(`Error in setup: ${error}`);
-  }
-}
-
-export async function getAllCandidatesByConstituencyNumber(
-  constituencyName: string,
-  constituencyNumber: number
-) {
-  const candidateContract = await getVoteTallyContractAndGateway();
-  try {
-    const response = await candidateContract.submitTransaction(
-      "getAllCandidatesByConstituencyNumber",
-      String(constituencyNumber),
-      constituencyName
-    );
-    const candidateResponseObjectArray = JSON.parse(response.toString("utf-8"))
-      .data as TCandidateRecord[];
-    return candidateResponseObjectArray;
-  } catch (error) {
-    console.error(`Error in setup: ${error}`);
-  }
-}
-
-export async function createCandidate(
+export async function CastVote(
   candidateId: string,
-  candidateName: string,
-  voterId: string,
   electionId: string,
-  constituencyNumber: number,
+  constituencyNumber: string,
   constituencyName: string,
-  affiliation: string,
-  partyName: string
+  permitKey: string
 ) {
-  const candidateContract = await getVoteTallyContractAndGateway();
+  const voteTallyContract = await getVoteTallyContractAndGateway();
   try {
-    const response = await candidateContract.submitTransaction(
-      "CreateCandidate",
+    const response = await voteTallyContract.submitTransaction(
+      "CastVote",
       candidateId,
-      candidateName,
-      voterId,
       electionId,
-      String(constituencyNumber),
+      constituencyNumber,
       constituencyName,
-      affiliation,
-      partyName
+      permitKey
     );
-    const candidateResponseObject = JSON.parse(response.toString("utf-8"));
-    return candidateResponseObject;
+    const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
+      message: string;
+      data: TTallyRecord | null;
+    };
+    return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
   }
 }
 
-export async function addConstituency(
+export async function GetTally(
   candidateId: string,
-  electionId: string,
-  constituencyNumber: number,
-  constituencyName: string
+  constituencyNumber: string,
+  constituencyName: string,
+  electionId: string
 ) {
-  const candidateContract = await getVoteTallyContractAndGateway();
+  const voteTallyContract = await getVoteTallyContractAndGateway();
   try {
-    const response = await candidateContract.submitTransaction(
-      "addConstituency",
+    const response = await voteTallyContract.submitTransaction(
+      "GetTally",
       candidateId,
-      electionId,
-      String(constituencyNumber),
-      constituencyName
-    );
-    const candidateResponseObject = JSON.parse(response.toString("utf-8"));
-    return candidateResponseObject;
-  } catch (error) {
-    console.error(`Error in setup: ${error}`);
-  }
-}
-
-export async function removeConstituency(
-  candidateId: string,
-  electionId: string,
-  constituencyNumber: number,
-  constituencyName: string
-) {
-  const candidateContract = await getVoteTallyContractAndGateway();
-  try {
-    const response = await candidateContract.submitTransaction(
-      "RemoveConstituency",
-      candidateId,
-      electionId,
-      String(constituencyNumber),
-      constituencyName
-    );
-    const candidateResponseObject = JSON.parse(response.toString("utf-8"));
-    return candidateResponseObject;
-  } catch (error) {
-    console.error(`Error in setup: ${error}`);
-  }
-}
-
-export async function deleteCandidate(candidateId: string, electionId: string) {
-  const candidateContract = await getVoteTallyContractAndGateway();
-  try {
-    const response = await candidateContract.submitTransaction(
-      "DeleteCandidate",
-      candidateId,
+      constituencyNumber,
+      constituencyName,
       electionId
     );
-    const candidateResponseObject = JSON.parse(response.toString("utf-8"));
-    return candidateResponseObject;
+    const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
+      message: string;
+      data: TTallyRecord | null;
+    };
+    return tallyObjectJSONResponse;
+  } catch (error) {
+    console.error(`Error in setup: ${error}`);
+  }
+}
+
+export async function GetConstituencyTallies(
+  electionId: string,
+  constituencyNumber: string,
+  constituencyName: string
+) {
+  const voteTallyContract = await getVoteTallyContractAndGateway();
+  try {
+    const response = await voteTallyContract.submitTransaction(
+      "GetConstituencyTallies",
+      electionId,
+      constituencyNumber,
+      constituencyName
+    );
+    const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
+      message: string;
+      data: TTallyRecord[] | null;
+    };
+    return tallyObjectJSONResponse;
+  } catch (error) {
+    console.error(`Error in setup: ${error}`);
+  }
+}
+
+export async function GetElectionTalliesCount(electionId: string) {
+  const voteTallyContract = await getVoteTallyContractAndGateway();
+  try {
+    const response = await voteTallyContract.submitTransaction(
+      "GetElectionTallies",
+      electionId
+    );
+    const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
+      message: string;
+      data: number | null;
+    };
+    return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
   }

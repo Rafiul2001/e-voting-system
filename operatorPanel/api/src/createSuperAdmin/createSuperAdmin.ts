@@ -3,9 +3,9 @@ import { AdminModel } from "../models/adminModel";
 import { database } from "../mongodb_connection/connection";
 import { createUser } from "../networkConnection/networkConnection";
 import { encryptPassword } from "../tools/passwordEncrypter";
+import readline from "readline";
 
 // Read input from command line
-const readline = require("readline");
 
 const rl = readline.createInterface({
   input: process.stdin,
