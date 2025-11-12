@@ -60,19 +60,19 @@ export async function initiallyEnrollAdminAndConnectGateway(
     adminUserPassword
   );
 
-  try {
-    //connect using Discovery enabled
-    await gatewayDistrictCommission.connect(ccpDistrictCommissionOrg, {
-      wallet: walletDistrictCommission,
-      identity: adminUserId,
-      discovery: { enabled: true, asLocalhost: true },
-    });
-  } catch (error) {
-    console.error(
-      `Error in connecting to gateway for ElectionCommissionOrg: ${error}`
-    );
-    process.exit(1);
-  }
+  // try {
+  //   //connect using Discovery enabled
+  //   await gatewayDistrictCommission.connect(ccpDistrictCommissionOrg, {
+  //     wallet: walletDistrictCommission,
+  //     identity: adminUserId,
+  //     discovery: { enabled: true, asLocalhost: true },
+  //   });
+  // } catch (error) {
+  //   console.error(
+  //     `Error in connecting to gateway for DistrictCommissionOrg: ${error}`
+  //   );
+  //   process.exit(1);
+  // }
 }
 
 export async function createNewAdmin(
@@ -161,30 +161,58 @@ export async function revokeUser(userId: string, adminUserId: string) {
   }
 }
 
-export async function getVoterPermitContractAndGateway() {
+export async function getVoterPermitContractAndGateway(identity: string) {
   try {
     /** ******* Fabric client init: Using ElectionCommission identity to ElectionCommission Peer ******* */
+    const walletDistrictCommission = await buildWallet(
+      Wallets,
+      walletPathDistrictCommission
+    );
+
+    await gatewayDistrictCommission.connect(ccpDistrictCommissionOrg, {
+      wallet: walletDistrictCommission,
+      identity: identity,
+      discovery: { enabled: true, asLocalhost: true },
+    });
+
     const networkDistrictCommission =
       await gatewayDistrictCommission.getNetwork(channelName);
-    const contractElectionCC =
+    const contractVoterPermitCC =
       networkDistrictCommission.getContract(voterPermitCC);
 
-    return contractElectionCC;
+    return {
+      gatewayDistrictCommission,
+      contractVoterPermitCC,
+    };
   } catch (error) {
     console.error(`Error in setup: ${error}`);
     process.exit(1);
   }
 }
 
-export async function getVoteTallyContractAndGateway() {
+export async function getVoteTallyContractAndGateway(identity: string) {
   try {
     /** ******* Fabric client init: Using ElectionCommission identity to ElectionCommission Peer ******* */
+    const walletDistrictCommission = await buildWallet(
+      Wallets,
+      walletPathDistrictCommission
+    );
+
+    await gatewayDistrictCommission.connect(ccpDistrictCommissionOrg, {
+      wallet: walletDistrictCommission,
+      identity: identity,
+      discovery: { enabled: true, asLocalhost: true },
+    });
+
     const networkDistrictCommission =
       await gatewayDistrictCommission.getNetwork(channelName);
-    const contractCandidateCC =
+    const contractVoteTallyCC =
       networkDistrictCommission.getContract(voteTallyCC);
 
-    return contractCandidateCC;
+    return {
+      contractVoteTallyCC,
+      gatewayDistrictCommission,
+    };
   } catch (error) {
     console.error(`Error in setup: ${error}`);
     process.exit(1);

@@ -16,18 +16,21 @@ export async function CastVote(
   electionId: string,
   constituencyNumber: string,
   constituencyName: string,
-  permitKey: string
+  permitKey: string,
+  machineId: string
 ) {
-  const voteTallyContract = await getVoteTallyContractAndGateway();
+  const voteTallyGateWayWithContract =
+    await getVoteTallyContractAndGateway(machineId);
   try {
-    const response = await voteTallyContract.submitTransaction(
-      "CastVote",
-      candidateId,
-      electionId,
-      constituencyNumber,
-      constituencyName,
-      permitKey
-    );
+    const response =
+      await voteTallyGateWayWithContract.contractVoteTallyCC.submitTransaction(
+        "CastVote",
+        candidateId,
+        electionId,
+        constituencyNumber,
+        constituencyName,
+        permitKey
+      );
     const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
       message: string;
       data: TTallyRecord | null;
@@ -35,6 +38,8 @@ export async function CastVote(
     return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
+  } finally {
+    voteTallyGateWayWithContract.gatewayDistrictCommission.disconnect();
   }
 }
 
@@ -42,17 +47,20 @@ export async function GetTally(
   candidateId: string,
   constituencyNumber: string,
   constituencyName: string,
-  electionId: string
+  electionId: string,
+  adminId: string
 ) {
-  const voteTallyContract = await getVoteTallyContractAndGateway();
+  const voteTallyGateWayWithContract =
+    await getVoteTallyContractAndGateway(adminId);
   try {
-    const response = await voteTallyContract.submitTransaction(
-      "GetTally",
-      candidateId,
-      constituencyNumber,
-      constituencyName,
-      electionId
-    );
+    const response =
+      await voteTallyGateWayWithContract.contractVoteTallyCC.submitTransaction(
+        "GetTally",
+        candidateId,
+        constituencyNumber,
+        constituencyName,
+        electionId
+      );
     const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
       message: string;
       data: TTallyRecord | null;
@@ -60,22 +68,27 @@ export async function GetTally(
     return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
+  } finally {
+    voteTallyGateWayWithContract.gatewayDistrictCommission.disconnect();
   }
 }
 
 export async function GetConstituencyTallies(
   electionId: string,
   constituencyNumber: string,
-  constituencyName: string
+  constituencyName: string,
+  adminId: string
 ) {
-  const voteTallyContract = await getVoteTallyContractAndGateway();
+  const voteTallyGateWayWithContract =
+    await getVoteTallyContractAndGateway(adminId);
   try {
-    const response = await voteTallyContract.submitTransaction(
-      "GetConstituencyTallies",
-      electionId,
-      constituencyNumber,
-      constituencyName
-    );
+    const response =
+      await voteTallyGateWayWithContract.contractVoteTallyCC.submitTransaction(
+        "GetConstituencyTallies",
+        electionId,
+        constituencyNumber,
+        constituencyName
+      );
     const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
       message: string;
       data: TTallyRecord[] | null;
@@ -83,16 +96,23 @@ export async function GetConstituencyTallies(
     return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
+  } finally {
+    voteTallyGateWayWithContract.gatewayDistrictCommission.disconnect();
   }
 }
 
-export async function GetElectionTalliesCount(electionId: string) {
-  const voteTallyContract = await getVoteTallyContractAndGateway();
+export async function GetElectionTalliesCount(
+  electionId: string,
+  adminId: string
+) {
+  const voteTallyGateWayWithContract =
+    await getVoteTallyContractAndGateway(adminId);
   try {
-    const response = await voteTallyContract.submitTransaction(
-      "GetElectionTallies",
-      electionId
-    );
+    const response =
+      await voteTallyGateWayWithContract.contractVoteTallyCC.submitTransaction(
+        "GetElectionTallies",
+        electionId
+      );
     const tallyObjectJSONResponse = JSON.parse(response.toString("utf-8")) as {
       message: string;
       data: number | null;
@@ -100,5 +120,7 @@ export async function GetElectionTalliesCount(electionId: string) {
     return tallyObjectJSONResponse;
   } catch (error) {
     console.error(`Error in setup: ${error}`);
+  } finally {
+    voteTallyGateWayWithContract.gatewayDistrictCommission.disconnect();
   }
 }
