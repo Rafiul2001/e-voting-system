@@ -50,7 +50,7 @@ permitRouter.post(
 );
 
 // Operator can get permit
-permitRouter.get(
+permitRouter.post(
   "/get-permit",
   verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
