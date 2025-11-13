@@ -60,11 +60,16 @@ export class VoteTallyContract extends Contract {
         });
       }
 
+      console.log(electionString);
+
       const payloadString = Buffer.from(electionString.payload).toString(
         "utf8"
       );
+
+      console.log(payloadString);
       const electionResponse = await JSON.parse(payloadString);
       const election = electionResponse.data;
+      console.log(election);
 
       if (election.status !== "started") {
         return JSON.stringify({
@@ -90,15 +95,16 @@ export class VoteTallyContract extends Contract {
         });
       }
 
+      console.log(permitObjectString);
       const permitPayloadString = Buffer.from(
         permitObjectString.payload
       ).toString("utf8");
+      console.log(permitPayloadString);
       const permitResponse = await JSON.parse(permitPayloadString);
-      const permit = permitResponse.data;
 
-      if (!permit.data) {
+      if (!permitResponse.data) {
         return JSON.stringify({
-          message: permit.message,
+          message: permitResponse.message,
           data: null,
         });
       }
@@ -109,7 +115,7 @@ export class VoteTallyContract extends Contract {
         candidateId,
         electionId,
         constituencyNumber,
-        constituencyNumber,
+        constituencyName,
       ]);
 
       // Check if a tally exists or not!
