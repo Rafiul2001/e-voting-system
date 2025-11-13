@@ -2,6 +2,13 @@ admin-panel/api/node_modules
 admin-panel/api/dist
 admin-panel/client/node_modules
 admin-panel/client/dist
+
+operatorPanel/api/node_modules
+operatorPanel/api/dist
+operatorPanel/client/node_modules
+operatorPanel/client/dist
+
+
 chaincodes/vote-tally-cc/node_modules
 chaincodes/vote-tally-cc/dist
 chaincodes/voter-permit-cc/node_modules
@@ -17,3 +24,4 @@ network/voterpermitcc.tar.gz
 network/votetallycc.tar.gz
 
 admin-panel/api/src/networkConnection/wallet
+operatorPanel/api/src/networkConnection/wallet

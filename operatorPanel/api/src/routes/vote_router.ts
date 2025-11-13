@@ -26,7 +26,7 @@ voteRouter.post(
       const responseFromContractFunction = await CastVote(
         candidateId,
         electionId,
-        constituencyNumber,
+        String(constituencyNumber),
         constituencyName,
         permitKey,
         machineId

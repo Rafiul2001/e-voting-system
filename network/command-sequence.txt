@@ -9,10 +9,10 @@ peer_up
 
 bash network.sh
 bash ccp-generate.sh
-bash deploy_voter_permit_cc.sh
-bash deploy_vote_tally_cc.sh
 bash deploy_election_cc.sh
 bash deploy_candidate_cc.sh
+bash deploy_voter_permit_cc.sh
+bash deploy_vote_tally_cc.sh
 bash invoke-initledger.sh
 bash invoke-getalltransactions.sh
 bash invoke-createTransaction.sh

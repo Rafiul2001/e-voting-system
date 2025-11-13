@@ -10,7 +10,7 @@ const machineRouter = Router();
 // Get All Machines
 machineRouter.get(
   "/get-all",
-    verifyToken,
+  verifyToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const machineArray = await database

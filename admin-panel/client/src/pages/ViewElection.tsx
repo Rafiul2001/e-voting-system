@@ -102,7 +102,7 @@ const ViewElection = () => {
 
       {/* Candidate Table */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <ul className="grid grid-cols-6 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-700">
+        <ul className="grid grid-cols-[10%_50%_10%_10%_10%_10%] bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-700">
           <li>Sl No.</li>
           <li>Candidate ID</li>
           <li>Candidate Name</li>
@@ -116,7 +116,7 @@ const ViewElection = () => {
             {candidateList.map((candidate, index) => (
               <ul
                 key={index}
-                className="grid grid-cols-6 items-center px-6 py-4 text-gray-700 hover:bg-gray-50 transition-all"
+                className="grid grid-cols-[10%_50%_10%_10%_10%_10%] items-center px-6 py-4 text-gray-700 hover:bg-gray-50 transition-all"
               >
                 <li>{index + 1}</li>
                 <li className="truncate">{candidate.candidateId}</li>
