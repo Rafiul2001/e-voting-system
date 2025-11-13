@@ -3,6 +3,7 @@ import z from "zod";
 export const adminLoginBody = z.object({
   userName: z.string(),
   password: z.string(),
+  type: z.string(),
 });
 
 export const adminLoginResponse = z.object({
